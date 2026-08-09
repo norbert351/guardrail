@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GuardRail Architecture — $U Agent Economy</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+    .container { max-width: 1280px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>GuardRail — The $U Agent Economy</h1>
+      </div>
+      <p class="subtitle">Scoped-session agents · hire via ERC-8183 · sell via x402 · settled in $U on BSC</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1100 720">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <marker id="arrowhead-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+          </marker>
+          <marker id="arrowhead-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+          </marker>
+          <marker id="arrowhead-violet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ============ LEFT: BUYER ============ -->
+        <rect x="20" y="90" width="170" height="90" rx="8" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="105" y="115" fill="white" font-size="11" font-weight="600" text-anchor="middle">Buyer</text>
+        <text x="105" y="131" fill="#94a3b8" font-size="9" text-anchor="middle">Project / User</text>
+        <text x="105" y="145" fill="#94a3b8" font-size="8" text-anchor="middle">Holds $U</text>
+        <text x="105" y="159" fill="#22d3ee" font-size="8" text-anchor="middle">eip155:97 wallet</text>
+
+        <!-- ============ MIDDLE: GUARDRAIL ============ -->
+        <rect x="240" y="30" width="600" height="660" rx="12" fill="rgba(251, 191, 36, 0.04)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="252" y="48" fill="#fbbf24" font-size="10" font-weight="600">GUARDRAIL · BSC TESTNET (eip155:97)</text>
+
+        <!-- Web marketplace (frontend) -->
+        <rect x="260" y="70" width="180" height="80" rx="8" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="350" y="92" fill="white" font-size="11" font-weight="600" text-anchor="middle">Marketplace UI</text>
+        <text x="350" y="108" fill="#94a3b8" font-size="9" text-anchor="middle">Next.js :3050</text>
+        <text x="350" y="122" fill="#94a3b8" font-size="8" text-anchor="middle">Hire · Buy report</text>
+        <text x="350" y="138" fill="#22d3ee" font-size="7" text-anchor="middle">trycloudflare.com</text>
+
+        <!-- x402 merchant (backend) -->
+        <rect x="260" y="200" width="180" height="80" rx="8" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="350" y="222" fill="white" font-size="11" font-weight="600" text-anchor="middle">x402 Merchant</text>
+        <text x="350" y="238" fill="#94a3b8" font-size="9" text-anchor="middle">Node :8787</text>
+        <text x="350" y="252" fill="#94a3b8" font-size="8" text-anchor="middle">/v1/agents/{health|yield|lp|grid}</text>
+        <text x="350" y="268" fill="#34d399" font-size="7" text-anchor="middle">402 challenge → settle → serve</text>
+
+        <!-- Four agents (backend) -->
+        <rect x="260" y="330" width="180" height="150" rx="8" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="350" y="352" fill="white" font-size="11" font-weight="600" text-anchor="middle">4 Agent Brains</text>
+        <text x="350" y="370" fill="#94a3b8" font-size="8" text-anchor="middle">• GridBot · grid orders</text>
+        <text x="350" y="386" fill="#94a3b8" font-size="8" text-anchor="middle">• Yield Router · APR routing</text>
+        <text x="350" y="402" fill="#94a3b8" font-size="8" text-anchor="middle">• Health Guard · liq watch</text>
+        <text x="350" y="418" fill="#94a3b8" font-size="8" text-anchor="middle">• LP Guardian · range mgmt</text>
+        <text x="350" y="440" fill="#34d399" font-size="7" text-anchor="middle">ERC-8004 ids 1790-1793</text>
+        <text x="350" y="454" fill="#34d399" font-size="7" text-anchor="middle">own session keys</text>
+
+        <!-- Contracts (database/onchain) -->
+        <rect x="500" y="70" width="180" height="80" rx="8" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="590" y="92" fill="white" font-size="11" font-weight="600" text-anchor="middle">GuardRailMarketplace</text>
+        <text x="590" y="108" fill="#94a3b8" font-size="8" text-anchor="middle">0x5703...38387D</text>
+        <text x="590" y="122" fill="#94a3b8" font-size="8" text-anchor="middle">4 live listings</text>
+        <text x="590" y="138" fill="#a78bfa" font-size="7" text-anchor="middle">verifyLive() → KeyStore</text>
+
+        <rect x="500" y="200" width="180" height="80" rx="8" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="590" y="222" fill="white" font-size="11" font-weight="600" text-anchor="middle">Altana KeyStore</text>
+        <text x="590" y="238" fill="#94a3b8" font-size="8" text-anchor="middle">0x6b83...1E94A</text>
+        <text x="590" y="252" fill="#94a3b8" font-size="8" text-anchor="middle">session keys live here</text>
+        <text x="590" y="268" fill="#a78bfa" font-size="7" text-anchor="middle">anyone can verify</text>
+
+        <rect x="500" y="330" width="180" height="90" rx="8" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="590" y="352" fill="white" font-size="11" font-weight="600" text-anchor="middle">ERC-8183 Kernel</text>
+        <text x="590" y="368" fill="#94a3b8" font-size="8" text-anchor="middle">job escrow in $U</text>
+        <text x="590" y="382" fill="#94a3b8" font-size="8" text-anchor="middle">fund → deliver → settle</text>
+        <text x="590" y="398" fill="#a78bfa" font-size="7" text-anchor="middle">proven via mainnet fork</text>
+
+        <rect x="500" y="470" width="180" height="90" rx="8" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="590" y="492" fill="white" font-size="11" font-weight="600" text-anchor="middle">$U Token</text>
+        <text x="590" y="508" fill="#94a3b8" font-size="8" text-anchor="middle">United Stables</text>
+        <text x="590" y="522" fill="#94a3b8" font-size="8" text-anchor="middle">0xc70B...E5565</text>
+        <text x="590" y="540" fill="#a78bfa" font-size="7" text-anchor="middle">EIP-3009 transferWithAuth</text>
+
+        <!-- Security: session boundary -->
+        <rect x="500" y="600" width="180" height="70" rx="8" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="590" y="622" fill="white" font-size="11" font-weight="600" text-anchor="middle">Scoped Session</text>
+        <text x="590" y="638" fill="#94a3b8" font-size="8" text-anchor="middle">allowlist · spend cap</text>
+        <text x="590" y="652" fill="#94a3b8" font-size="8" text-anchor="middle">expiry · one-tx revoke</text>
+
+        <!-- Security group dashed around the trust core -->
+        <rect x="480" y="50" width="220" height="640" rx="10" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="488" y="66" fill="#fb7185" font-size="8">trust core: enforced onchain</text>
+
+        <!-- ============ RIGHT: P2P/EXTERNAL ============ -->
+        <rect x="900" y="90" width="170" height="80" rx="8" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="985" y="112" fill="white" font-size="11" font-weight="600" text-anchor="middle">Agent Operators</text>
+        <text x="985" y="128" fill="#94a3b8" font-size="9" text-anchor="middle">third-party agents</text>
+        <text x="985" y="142" fill="#94a3b8" font-size="8" text-anchor="middle">any ERC-8004 agent</text>
+
+        <rect x="900" y="220" width="170" height="80" rx="8" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="985" y="242" fill="white" font-size="11" font-weight="600" text-anchor="middle">DeFi Protocols</text>
+        <text x="985" y="258" fill="#94a3b8" font-size="9" text-anchor="middle">PancakeSwap</text>
+        <text x="985" y="272" fill="#94a3b8" font-size="8" text-anchor="middle">Venus · Lista</text>
+
+        <rect x="900" y="350" width="170" height="80" rx="8" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="985" y="372" fill="white" font-size="11" font-weight="600" text-anchor="middle">BNB Agent Studio</text>
+        <text x="985" y="388" fill="#94a3b8" font-size="9" text-anchor="middle">bag x402 buy</text>
+        <text x="985" y="402" fill="#94a3b8" font-size="8" text-anchor="middle">8004scan indexer</text>
+
+        <!-- ============ ARROWS ============ -->
+
+        <!-- Buyer -> Marketplace UI (hire) -->
+        <line x1="190" y1="110" x2="258" y2="110" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="224" y="103" fill="#22d3ee" font-size="8" text-anchor="middle">hire</text>
+
+        <!-- Buyer -> x402 merchant (buy report) -->
+        <path d="M 105 180 L 105 240 L 258 240" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+        <text x="150" y="232" fill="#34d399" font-size="8">pay 0.1 $U</text>
+
+        <!-- Buyer -> $U -->
+        <path d="M 105 180 L 105 500 L 498 500" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arrowhead-violet)"/>
+        <text x="200" y="490" fill="#a78bfa" font-size="8">EIP-3009 auth</text>
+
+        <!-- Marketplace UI -> x402 merchant (button calls) -->
+        <line x1="350" y1="150" x2="350" y2="198" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+        <text x="362" y="178" fill="#94a3b8" font-size="8">buy-report API</text>
+
+        <!-- x402 merchant -> agents -->
+        <line x1="350" y1="280" x2="350" y2="328" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead-emerald)"/>
+        <text x="362" y="310" fill="#94a3b8" font-size="8">run report</text>
+
+        <!-- Agents -> KeyStore (session signing) -->
+        <line x1="440" y1="380" x2="498" y2="240" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-rose)"/>
+        <text x="452" y="330" fill="#fb7185" font-size="8">scoped session key</text>
+
+        <!-- Agents -> Marketplace (listings) -->
+        <line x1="440" y1="420" x2="498" y2="110" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead-violet)"/>
+        <text x="455" y="280" fill="#a78bfa" font-size="8" transform="rotate(-30 455 280)">verifyLive()</text>
+
+        <!-- Agents -> DeFi (swaps/reads) -->
+        <path d="M 440 400 L 898 260" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="640" y="312" fill="#94a3b8" font-size="8">swaps · reserves · APR</text>
+
+        <!-- Marketplace UI -> ERC-8183 kernel -->
+        <line x1="500" y1="110" x2="498" y2="110" stroke="#a78bfa" stroke-width="1.5"/>
+        <path d="M 440 110 L 498 370" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arrowhead-violet)"/>
+        <text x="472" y="240" fill="#a78bfa" font-size="8" transform="rotate(-60 472 240)">ERC-8183 hire</text>
+
+        <!-- Marketplace -> operators (anyone can list/verify) -->
+        <line x1="682" y1="110" x2="898" y2="130" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="790" y="122" fill="#94a3b8" font-size="8">public reads</text>
+
+        <!-- Studio -> x402 merchant -->
+        <line x1="900" y1="390" x2="442" y2="240" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowhead-amber)"/>
+        <text x="700" y="330" fill="#fbbf24" font-size="8">B402 wire</text>
+
+        <!-- $U -> escrow kernel -->
+        <line x1="590" y1="470" x2="590" y2="422" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead-violet)"/>
+        <text x="600" y="450" fill="#a78bfa" font-size="8">escrow</text>
+
+        <!-- ============ LEGEND ============ -->
+        <text x="860" y="470" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="860" y="482" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="882" y="490" fill="#94a3b8" font-size="8">Frontend / Buyer</text>
+        <rect x="860" y="498" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="882" y="506" fill="#94a3b8" font-size="8">Backend / Agents</text>
+        <rect x="860" y="514" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="882" y="522" fill="#94a3b8" font-size="8">Onchain / Contracts</text>
+        <rect x="860" y="530" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="882" y="538" fill="#94a3b8" font-size="8">Security / Sessions</text>
+        <rect x="860" y="546" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="882" y="554" fill="#94a3b8" font-size="8">Studio / B402</text>
+        <line x1="860" y1="568" x2="876" y2="568" stroke="#fb7185" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="882" y="571" fill="#94a3b8" font-size="8">Auth / Revoke flow</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>The Trust Problem</h3>
+        </div>
+        <ul>
+          <li>• Bankr-style agents with full approvals can drain wallets</li>
+          <li>• GuardRail: scoped Altana session keys</li>
+          <li>• allowlist + spend cap + expiry, enforced onchain</li>
+          <li>• one-tx revoke kills an agent instantly</li>
+          <li>• verified live: both attacks blocked with UnauthorizedCall</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>The Payment Rails</h3>
+        </div>
+        <ul>
+          <li>• Hire: ERC-8183 job escrow in $U</li>
+          <li>• fund → agent delivers → escrow releases</li>
+          <li>• buyer reclaims if no delivery</li>
+          <li>• Sell: x402 / B402 merchant, 0.1 $U per report</li>
+          <li>• EIP-3009 auth, settled onchain</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>$U = The Agent Dollar</h3>
+        </div>
+        <ul>
+          <li>• United Stables stablecoin, BNB Chain native</li>
+          <li>• standard settlement token of the BNB agent economy</li>
+          <li>• buyers hold it, agents earn it</li>
+          <li>• 4 ERC-8004 identities onchain (1790-1793)</li>
+          <li>• live: web + merchant public via tunnels</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      GuardRail · BNB Smart Money Era · BSC testnet eip155:97 · github.com/norbert351/guardrail
+    </p>
+  </div>
+</body>
+</html>
