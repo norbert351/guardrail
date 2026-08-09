@@ -24,10 +24,10 @@ const EXPLORER = "https://testnet.bscscan.com/tx/";
 const WALLET: Address = "0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97";
 
 const AGENTS = [
-  { name: "GuardRail LP Guardian", category: "Rebalancing", desc: "Manages PancakeSwap LP ranges and resets positions when the ratio drifts outside a band.", endpoint: "http://127.0.0.1:8787/v1/agents/lp" },
-  { name: "GuardRail GridBot", category: "Grid Trading", desc: "Runs a bounded grid strategy on WBNB/USDT, firing scoped swaps at grid levels.", endpoint: "http://127.0.0.1:8787/v1/agents/grid" },
-  { name: "GuardRail Yield Router", category: "Yield Optimisation", desc: "Compares live APRs across markets and routes liquidity to the best one.", endpoint: "http://127.0.0.1:8787/v1/agents/yield" },
-  { name: "GuardRail Health Guard", category: "Health Factor Monitoring", desc: "Watches lending positions and protects them from liquidation.", endpoint: "http://127.0.0.1:8787/v1/agents/health" },
+  { name: "GuardRail LP Guardian", category: "Rebalancing", desc: "Manages PancakeSwap LP ranges and resets positions when the ratio drifts outside a band.", endpoint: "https://equivalent-aerospace-sodium-standard.trycloudflare.com/v1/agents/lp" },
+  { name: "GuardRail GridBot", category: "Grid Trading", desc: "Runs a bounded grid strategy on WBNB/USDT, firing scoped swaps at grid levels.", endpoint: "https://equivalent-aerospace-sodium-standard.trycloudflare.com/v1/agents/grid" },
+  { name: "GuardRail Yield Router", category: "Yield Optimisation", desc: "Compares live APRs across markets and routes liquidity to the best one.", endpoint: "https://equivalent-aerospace-sodium-standard.trycloudflare.com/v1/agents/yield" },
+  { name: "GuardRail Health Guard", category: "Health Factor Monitoring", desc: "Watches lending positions and protects them from liquidation.", endpoint: "https://equivalent-aerospace-sodium-standard.trycloudflare.com/v1/agents/health" },
 ] as const;
 
 const REGISTER_ABI = [

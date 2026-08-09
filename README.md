@@ -35,10 +35,10 @@ state is onchain truth, not metadata an admin can lie about.
 
 | Listing | Category | ERC-8004 id | Behavior |
 |---|---|---|---|
-| GuardRail LP Guardian | Rebalancing | 1786 | Reads live WBNB/USDT reserves, tracks deviation from anchor, rebalances outside a ±20% band |
-| GuardRail GridBot | Grid Trading | 1787 | Computes a grid around the live price, fires scoped swaps at grid levels |
-| GuardRail Yield Router | Yield Optimisation | 1788 | Reads real APRs, routes liquidity to the market that beats the floor by a margin |
-| GuardRail Health Guard | Health Factor Monitoring | 1789 | Reads the real Venus vUSDT market, computes health, protective action when critical |
+| GuardRail LP Guardian | Rebalancing | 1790 | Reads live WBNB/USDT reserves, tracks deviation from anchor, rebalances outside a ±20% band |
+| GuardRail GridBot | Grid Trading | 1791 | Computes a grid around the live price, fires scoped swaps at grid levels |
+| GuardRail Yield Router | Yield Optimisation | 1792 | Reads real APRs, routes liquidity to the market that beats the floor by a margin |
+| GuardRail Health Guard | Health Factor Monitoring | 1793 | Reads the real Venus vUSDT market, computes health, protective action when critical |
 
 Every agent holds **its own session private key** and transacts through it.
 The sessions are capped at 0.02 tBNB/day with an allowlist of exactly
@@ -75,7 +75,7 @@ proven end to end against the **live mainnet deployment** in a fork test
 
 ### Sell agent reports — x402 / B402
 
-`demo/src/x402-server.ts` is an x402 merchant on `:8787` with four paid
+`demo/src/x402-server.ts` is an x402 merchant with four paid
 endpoints: `/v1/agents/{health|yield|lp|grid}`.
 
 - First contact → **402 challenge**: 0.1 $U, payTo the GuardRail wallet,
