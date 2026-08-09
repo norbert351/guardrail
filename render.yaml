@@ -1,0 +1,24 @@
+# GuardRail web marketplace — Render blueprint.
+# Deploy: "New +" > "Blueprint" > connect github.com/norbert351/guardrail,
+# or "New Web Service" pointing at the repo root.
+#
+# The web app serves the marketplace UI (port 3050) with dynamic onchain
+# reads. The x402 merchant runs separately (see demo/, port 8787); point
+# GUARDRAIL_MERCHANT_URL at it when deployed.
+
+services:
+  - type: web
+    name: guardrail
+    runtime: node
+    repo: https://github.com/norbert351/guardrail
+    rootDir: web
+    buildCommand: npm install && npm run build
+    startCommand: npx next start -p ${PORT:-3050}
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GUARDRAIL_MERCHANT_URL
+        value: http://127.0.0.1:8787
+        sync: false
+    plan: free
