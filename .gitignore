@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+cache/
+demo/.guardrail-state.json
+demo/.guardrail-sessions.json
+demo/.guardrail-agent-keys.json
+demo/.env
+*.log

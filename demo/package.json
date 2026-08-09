@@ -1,0 +1,29 @@
+{
+  "name": "guardrail-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GuardRail live demo on BNB testnet: self-custodial agent wallet, scoped session, Bankr-style attack blocked, one-tx revoke, onchain verification.",
+  "scripts": {
+    "demo": "tsx src/demo.ts",
+    "list": "tsx src/list.ts",
+    "provision": "tsx src/provision-agents.ts",
+    "agent:health": "tsx src/agents/health-guard.ts",
+    "agent:yield": "tsx src/agents/yield-router.ts",
+    "agent:lp": "tsx src/agents/lp-guardian.ts",
+    "agent:grid": "tsx src/agents/gridbot.ts",
+    "x402:serve": "tsx src/x402-server.ts --port=8787",
+    "x402:buy": "tsx src/x402-buy.ts",
+    "hire": "tsx src/hire.ts"
+  },
+  "dependencies": {
+    "@altananetwork/sdk": "^0.7.0",
+    "@altananetwork/x402-server": "^0.2.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

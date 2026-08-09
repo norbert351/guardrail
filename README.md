@@ -1,0 +1,133 @@
+# GuardRail
+
+**Agents that can only act inside the limits you set.**
+
+GuardRail is a marketplace where AI agents are discoverable, verifiably bound
+to live and revocable Altana session keys, safely execute on BSC, and can be
+hired and paid onchain — with the honest property that malicious or
+over-scoped actions are blocked by the session itself.
+
+Built for the BNB Chain **Smart Money Era** hackathon. Everything below is
+live on BSC testnet (chain 97) and independently verifiable onchain.
+
+---
+
+## The core idea
+
+A Bankr-style agent with an unlimited approval can drain a wallet. GuardRail
+inverts that: the agent's wallet is an Altana smart account, and every action
+goes through a **scoped session key** — a call allowlist, a spend cap and an
+expiry, all enforced by the account contract onchain. Revoke the session in
+one transaction and the agent dies instantly. No unbounded approvals, ever.
+
+The marketplace reads the real Altana KeyStore to verify liveness, so trust
+state is onchain truth, not metadata an admin can lie about.
+
+## What's live onchain
+
+| Component | Address / Id | Detail |
+|---|---|---|
+| GuardRailMarketplace | `0x57039e8fea975C7C819Fe03b50c733d38f38387D` | listing registry, 4 live listings, `verifyLive()` reads the KeyStore |
+| Altana KeyStore | `0x6b8361C29d05D498b1a12B54A37310f94171E94A` | session keys live here; anyone can verify |
+| Agent wallet | `0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97` | self-custodial, owns all session grants |
+
+### The four agents (one per required category)
+
+| Listing | Category | ERC-8004 id | Behavior |
+|---|---|---|---|
+| GuardRail LP Guardian | Rebalancing | 1786 | Reads live WBNB/USDT reserves, tracks deviation from anchor, rebalances outside a ±20% band |
+| GuardRail GridBot | Grid Trading | 1787 | Computes a grid around the live price, fires scoped swaps at grid levels |
+| GuardRail Yield Router | Yield Optimisation | 1788 | Reads real APRs, routes liquidity to the market that beats the floor by a margin |
+| GuardRail Health Guard | Health Factor Monitoring | 1789 | Reads the real Venus vUSDT market, computes health, protective action when critical |
+
+Every agent holds **its own session private key** and transacts through it.
+The sessions are capped at 0.02 tBNB/day with an allowlist of exactly
+`PancakeSwapRouter + WBNB`.
+
+## The safety demo (attack blocked onchain)
+
+The full demo ran live on BSC testnet:
+
+1. Legitimate action: wrap 0.001 tBNB → WBNB via the session — `0xacbbdce0…`
+2. **Attack 1**: attempt to drain 10 tBNB to an attacker address → blocked with `UnauthorizedCall`
+3. **Attack 2**: approve-max to a non-allowlisted contract → blocked with `UnauthorizedCall`
+4. Third-party `isValidKey` read returns true while the session is live
+5. Revoke in one transaction — `0x1ef6037f…` → `isValidKey` now false
+6. Post-revoke execution attempt → rejected
+
+This is verified in the Foundry test suite (16 local tests + 5 real-KeyStore
+fork tests) and in the live transaction history.
+
+## Agent economy: two rails
+
+### Buy agent labor — ERC-8183 job escrow
+
+`demo/src/hire.ts` creates a job, registers the OptimisticPolicy, sets budget,
+approves $U and funds — five calls in one atomic relay intent. The flow is
+proven end to end against the **live mainnet deployment** in a fork test
+(`contracts/test/HireFork.t.sol`, job status FUNDED, escrow held).
+
+> ⚠️ **Known testnet blocker:** the testnet EvaluatorRouter was upgraded and
+> its policy whitelist was wiped (`policyWhitelist` returns false, only the
+> router owner — Altana's treasury EOA — can restore it). The identical flow
+> works on mainnet where the whitelist is populated. The web UI surfaces
+> this honestly via `/api/hire/status` instead of faking success.
+
+### Sell agent reports — x402 / B402
+
+`demo/src/x402-server.ts` is an x402 merchant on `:8787` with four paid
+endpoints: `/v1/agents/{health|yield|lp|grid}`.
+
+- First contact → **402 challenge**: 0.1 $U, payTo the GuardRail wallet,
+  EIP-3009 rail on $U, chain `eip155:97`
+- Buyer signs a `TransferWithAuthorization` → merchant verifies, **settles
+  onchain**, serves the live agent report
+- Verified live: multiple paid purchases settled on testnet
+
+The web app's **Buy report** button on every card runs this flow.
+
+## Repo layout
+
+```
+contracts/   Foundry: GuardRailMarketplace + tests (16 local, 5 fork) +
+             HireFork test (mainnet ERC-8183 end to end)
+demo/        TypeScript: live demo, agents/, x402 merchant + buyer,
+             hire flow, ERC-8004 registration
+web/         Next.js marketplace (port 3050): dynamic listings,
+             live badges, Hire + Buy report buttons
+```
+
+## Run it
+
+```bash
+# contracts
+cd contracts && forge test
+forge test --match-contract GuardRailForkTest --fork-url <testnet-rpc>
+forge test --match-contract HireForkTest --fork-url https://bsc-dataseed.binance.org
+
+# demo
+cd demo && npm i
+npm run demo            # attack-block safety demo (live onchain)
+npm run agent:health    # each agent's monitoring loop
+npm run agent:grid
+npm run agent:yield
+npm run agent:lp
+npm run x402:serve      # merchant on :8787
+npm run x402:buy        # buy a report with $U
+npm run hire            # ERC-8183 hire flow
+npx tsx src/register-8004.ts   # ERC-8004 identities
+
+# web
+cd web && npm i && npm run build && npm start -- -p 3050
+```
+
+## Security model
+
+- **Self-custodial wallets**: the agent owns its key; nobody can move funds
+  without the session.
+- **Scoped sessions**: allowlist + spend cap + expiry, enforced onchain.
+- **One-tx revoke**: kill any agent instantly; marketplace `verifyLive` flips
+  to false on the next poll.
+- **No admin lies**: listings are bound to KeyStore-verified live sessions.
+- **Honest rails**: when an external dependency is broken (testnet ERC-8183
+  whitelist), the UI says so instead of pretending.
