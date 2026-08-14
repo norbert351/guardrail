@@ -12,6 +12,7 @@
     "agent:yield": "tsx src/agents/yield-router.ts",
     "agent:lp": "tsx src/agents/lp-guardian.ts",
     "agent:grid": "tsx src/agents/gridbot.ts",
+    "llm:test": "tsx src/llm-test.ts",
     "x402:serve": "tsx src/x402-server.ts --port=8787",
     "x402:buy": "tsx src/x402-buy.ts",
     "hire": "tsx src/hire.ts"

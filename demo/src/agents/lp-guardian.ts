@@ -18,7 +18,7 @@
  */
 
 import { formatEther, encodeFunctionData, parseEther } from "viem";
-import { act, loadAgent, log, PANCAKE_ROUTER, WBNB } from "./lib.js";
+import { act, claudeAdvise, loadAgent, log, PANCAKE_ROUTER, WBNB } from "./lib.js";
 
 const USDT = "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd" as `0x${string}`;
 const PAIR = "0x2F72f4FddA2c9344B6f6f075A90A0e48C475d8cA" as `0x${string}`;
@@ -56,6 +56,14 @@ async function checkOnce() {
   const anchor = price || 1;
   const deviation = Math.abs(price - anchor) / anchor;
   log(agent.config.name, `deviation from anchor: ${(deviation * 100).toFixed(2)}% (band ${BAND * 100}%)`);
+
+  // Claude advisory: second opinion on whether the deviation warrants a
+  // rebalance. Non-binding — the ±20% band rule and the session cap decide.
+  await claudeAdvise(
+    agent.config.name,
+    "You are an LP position manager for a GuardRail scoped-session bot. Reply in one short sentence: whether a rebalance (pull LP, re-add at the fresh ratio) is justified given the price deviation from the anchor, and why.",
+    `WBNB/USDT price ${price.toFixed(2)} USDT per WBNB, deviation from anchor ${(deviation * 100).toFixed(2)}%, rebalance band ±${BAND * 100}%.`,
+  );
 
   if (process.argv.includes("--act")) {
     log(agent.config.name, "demo act: establish LP leg, wrap 0.001 BNB -> WBNB via session key");

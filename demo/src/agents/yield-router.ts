@@ -20,7 +20,7 @@
  */
 
 import { parseEther } from "viem";
-import { act, loadAgent, log, VENUS_VUSDT_MAINNET } from "./lib.js";
+import { act, claudeAdvise, loadAgent, log, VENUS_VUSDT_MAINNET } from "./lib.js";
 
 const VTOKEN_ABI = [
   { name: "supplyRatePerBlock", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
@@ -52,6 +52,14 @@ async function checkOnce() {
   const best = markets.reduce((a, b) => (b.apy > a.apy ? b : a));
   log(agent.config.name, `APRs: ${markets.map((m) => `${m.name} ${m.apy.toFixed(2)}%`).join(", ")}`);
   log(agent.config.name, `best market: ${best.name} at ${best.apy.toFixed(2)}%`);
+
+  // Claude advisory: second opinion on the routing decision. Non-binding —
+  // the deterministic APR rule and the session cap still decide.
+  await claudeAdvise(
+    agent.config.name,
+    "You are a yield strategist for a GuardRail scoped-session bot. Reply in one short sentence: whether routing liquidity to the best APR market is justified given the numbers, and why.",
+    `Markets: ${markets.map((m) => `${m.name} ${m.apy.toFixed(2)}%`).join(", ")}. Rebalance floor ${FLOOR_APR}% + margin ${MARGIN}pp.`,
+  );
 
   if (process.argv.includes("--act")) {
     log(agent.config.name, "demo act: allocate 0.001 BNB -> WBNB via session key");

@@ -18,7 +18,7 @@
  */
 
 import { formatEther, formatUnits } from "viem";
-import { act, loadAgent, log, VENUS_VUSDT_MAINNET, WALLET } from "./lib.js";
+import { act, claudeAdvise, loadAgent, log, VENUS_VUSDT_MAINNET, WALLET } from "./lib.js";
 
 const ALARM_HEALTH = 1.5; // below this, the agent acts
 const CRITICAL_HEALTH = 1.1; // below this, liquidation is near
@@ -60,6 +60,14 @@ async function checkOnce() {
   const positionValue = Number(formatEther(position));
   const health = positionValue > 0 ? Math.min(positionValue / 0.5, 10) : 0; // demo scale
   log(agent.config.name, `health factor (demo scale): ${health.toFixed(2)}`);
+
+  // Claude advisory: second opinion on whether protective action is
+  // warranted. Non-binding — the health rule and session scope still decide.
+  await claudeAdvise(
+    agent.config.name,
+    "You are a DeFi risk monitor for a GuardRail scoped-session bot. Reply in one short sentence: whether the reported position health warrants protective action (unwrap WBNB to BNB for repayment liquidity), and why.",
+    `Venus vUSDT position value ${formatUnits(position, 18)} USDT, supply APY ~${apy.toFixed(2)}%, computed health factor ${health.toFixed(2)} (alarm below 1.5, critical below 1.1).`,
+  );
 
   if (process.argv.includes("--act")) {
     log(agent.config.name, "demo act: protective unwrap WBNB -> BNB via session key");

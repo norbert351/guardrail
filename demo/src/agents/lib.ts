@@ -22,11 +22,58 @@ import {
 import { createPublicClient, http, type Address, type Hex } from "viem";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { ClaudeClient, ClaudeError, type ClaudeResult } from "../llm.js";
 
 export const PANCAKE_ROUTER: Address = "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3";
 export const WBNB: Address = "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd";
 export const EXPLORER = "https://testnet.bscscan.com/tx/";
 export const WALLET = "0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97" as Address;
+
+/** Load demo/.env into process.env (existing vars win). Never prints values. */
+export function loadEnv(): void {
+  const file = join(process.cwd(), ".env");
+  if (!existsSync(file)) return;
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (!m || m[1] === "ANTHROPIC_AUTH_TOKEN" && process.env[m[1]]) continue;
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2];
+  }
+}
+
+/**
+ * Ask Claude (AgentRouter gateway, claude-opus-4-8) for an advisory decision.
+ * The agent stays the decision maker: this returns a recommendation the
+ * agent may ignore, and every execution still passes through the scoped
+ * session (allowlist + spend cap + expiry). On any gateway failure the
+ * agent falls back to its deterministic rule — never blocks on the LLM.
+ */
+export async function claudeAdvise(
+  agent: string,
+  system: string,
+  prompt: string,
+): Promise<{ ok: true; result: ClaudeResult } | { ok: false; error: string }> {
+  loadEnv();
+  try {
+    const client = new ClaudeClient();
+    const result = await client.complete({
+      system,
+      messages: [{ role: "user", content: prompt }],
+      maxTokens: 400,
+      temperature: 0.2,
+    });
+    log(agent, `claude advised (${result.model}): ${result.text.slice(0, 200)}`);
+    return { ok: true, result };
+  } catch (e) {
+    const err = e instanceof ClaudeError ? e : new ClaudeError(0, "network", String((e as Error)?.message ?? e));
+    const hint =
+      err.kind === "auth" ? "auth rejected — check ANTHROPIC_AUTH_TOKEN"
+      : err.kind === "model_unavailable" ? "model has no channel on gateway — switch ANTHROPIC_MODEL"
+      : err.kind === "network" ? "gateway unreachable (VM IP is WAF-blocked — run from a residential IP)"
+      : `gateway error ${err.status}`;
+    log(agent, `claude unavailable (${hint}), falling back to deterministic rule`);
+    return { ok: false, error: hint };
+  }
+}
 
 // Mainnet protocol contracts, used for read-only market data (health factor,
 // APRs, pool ratios). Reads are free and unlimited.

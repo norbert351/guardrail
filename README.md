@@ -86,6 +86,29 @@ endpoints: `/v1/agents/{health|yield|lp|grid}`.
 
 The web app's **Buy report** button on every card runs this flow.
 
+## Claude brain (AgentRouter gateway)
+
+Every agent asks Claude (`claude-opus-4-8` via agentrouter.org) for an
+advisory decision each cycle — a second opinion on grid tightness, health
+risk, APR routing, or LP rebalance. The advice is **non-binding**: the
+deterministic rule and the scoped session (allowlist + spend cap + expiry)
+are what actually decide and execute. If the gateway is unreachable, the
+agent logs it and falls back to its rule — it never blocks on the LLM.
+
+Config lives in `demo/.env` (gitignored, never commit the token):
+
+```bash
+ANTHROPIC_AUTH_TOKEN=sk-...      # Bearer token, NOT x-api-key
+ANTHROPIC_BASE_URL=https://agentrouter.org   # no /v1 in base
+ANTHROPIC_MODEL=claude-opus-4-8  # 4-6/4-7 are dead (503, no channel)
+```
+
+Client: `demo/src/llm.ts` — POSTs `{base}/v1/messages` with
+`Authorization: Bearer`, `anthropic-version: 2023-06-01`, system prompt in
+the top-level `system` field, `max_tokens` always set. Smoke test:
+`npm run llm:test` (run from a residential IP — the gateway's WAF blocks
+datacenter IPs and fingerprints curl).
+
 ## Repo layout
 
 ```

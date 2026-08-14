@@ -22,7 +22,7 @@
  */
 
 import { encodeFunctionData, parseEther } from "viem";
-import { act, loadAgent, log, PANCAKE_ROUTER, WBNB } from "./lib.js";
+import { act, claudeAdvise, loadAgent, log, PANCAKE_ROUTER, WBNB } from "./lib.js";
 
 const USDT = "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd" as `0x${string}`;
 const PAIR = "0x2F72f4FddA2c9344B6f6f075A90A0e48C475d8cA" as `0x${string}`;
@@ -51,6 +51,14 @@ async function checkOnce() {
   const sellLevel = price * (1 + SPREAD);
 
   log(agent.config.name, `pair price ${price.toFixed(2)} USDT/WBNB, grid buy ${buyLevel.toFixed(2)} / sell ${sellLevel.toFixed(2)}`);
+
+  // Claude advisory: a second opinion on grid tightness given the live
+  // price. Non-binding — the grid rule and the session cap still decide.
+  await claudeAdvise(
+    agent.config.name,
+    "You are a grid-trading strategist for a GuardRail scoped-session bot. Reply in one short sentence: whether a 5% grid step around the given price is sensible for WBNB/USDT on BSC testnet, and why.",
+    `WBNB/USDT price ${price.toFixed(2)}, grid buy level ${buyLevel.toFixed(2)} (-5%), sell level ${sellLevel.toFixed(2)} (+5%).`,
+  );
 
   // The rule: the grid fires when the market trades through a level. The
   // demo simulates one tick per cycle by comparing against the anchor; in a
