@@ -66,14 +66,17 @@ function runAgent(agent: { name: string; listing: number; script: string }): Pro
 async function tick() {
   const started = ts();
   writeLog(`=== tick ${started} ===`);
-  for (const agent of AGENTS) {
+  // Run all four agent processes concurrently — they're independent, so
+  // serializing them let a single hung agent stall the whole cycle.
+  const results = await Promise.all(AGENTS.map(async (agent) => {
     const t0 = Date.now();
     const { ok, out } = await runAgent(agent);
     const ms = Date.now() - t0;
     const last = out.split("\n").filter(Boolean).pop() ?? "";
     const hasTx = /tx|sent|0x[0-9a-f]{40}/i.test(out);
     writeLog(`[${ts()}] ${agent.name} (listing #${agent.listing}) ${ok ? "ok" : "FAIL"} ${ms}ms ${hasTx ? "·ACTION" : ""} | ${last.slice(0, 200)}`);
-  }
+    return { agent, ok, ms };
+  }));
   writeLog(`=== tick done in ${((Date.now() - new Date(started).getTime()) / 1000).toFixed(1)}s ===`);
 }
 

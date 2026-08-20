@@ -54,7 +54,7 @@ export async function claudeAdvise(
 ): Promise<{ ok: true; result: ClaudeResult } | { ok: false; error: string }> {
   loadEnv();
   try {
-    const client = new ClaudeClient();
+    const client = new ClaudeClient({ timeoutMs: 10_000 });
     const result = await client.complete({
       system,
       messages: [{ role: "user", content: prompt }],
