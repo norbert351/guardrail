@@ -35,8 +35,9 @@ const EXPLORER = "https://testnet.bscscan.com/tx/";
 const U_TOKEN: Address = ERC8183_ADDRESSES[97].paymentToken;
 
 function loadAdminKey(): `0x${string}` {
+  if (process.env.GUARDRAIL_ADMIN_KEY) return process.env.GUARDRAIL_ADMIN_KEY as `0x${string}`;
   const stateFile = join(process.cwd(), ".guardrail-state.json");
-  if (!existsSync(stateFile)) throw new Error("no .guardrail-state.json, run demo first");
+  if (!existsSync(stateFile)) throw new Error("no .guardrail-state.json (set GUARDRAIL_ADMIN_KEY)");
   return JSON.parse(readFileSync(stateFile, "utf8")).adminKey as `0x${string}`;
 }
 

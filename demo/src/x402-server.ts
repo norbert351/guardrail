@@ -37,8 +37,14 @@ const WALLET = "0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97" as `0x${string}`;
 const PRICE_U = parseEther("0.1"); // 0.1 $U per report
 
 function loadAdminKey(): `0x${string}` {
+  // Prefer an injected secret (Render env var / secret file); fall back to
+  // the local state file for the on-VM demo. Env wins so a deploy doesn't
+  // need to ship the gitignored .guardrail-state.json.
+  if (process.env.GUARDRAIL_ADMIN_KEY) {
+    return process.env.GUARDRAIL_ADMIN_KEY as `0x${string}`;
+  }
   const f = join(process.cwd(), ".guardrail-state.json");
-  if (!existsSync(f)) throw new Error("no .guardrail-state.json");
+  if (!existsSync(f)) throw new Error("no .guardrail-state.json (set GUARDRAIL_ADMIN_KEY)");
   return JSON.parse(readFileSync(f, "utf8")).adminKey as `0x${string}`;
 }
 

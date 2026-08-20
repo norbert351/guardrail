@@ -19,8 +19,9 @@ const U_TOKEN = "0xc70B8741B8B07A6d61E54fd4B20f22Fa648E5565" as Address;
 const RPC = "https://bsc-testnet-rpc.publicnode.com";
 
 function loadAdminKey(): `0x${string}` {
+  if (process.env.GUARDRAIL_ADMIN_KEY) return process.env.GUARDRAIL_ADMIN_KEY as `0x${string}`;
   const f = join(process.cwd(), ".guardrail-state.json");
-  if (!existsSync(f)) throw new Error("no .guardrail-state.json");
+  if (!existsSync(f)) throw new Error("no .guardrail-state.json (set GUARDRAIL_ADMIN_KEY)");
   return JSON.parse(readFileSync(f, "utf8")).adminKey as `0x${string}`;
 }
 

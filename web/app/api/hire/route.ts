@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { promisify } from "node:util";
 
 const execFileP = promisify(execFile);
+
+// Resolve the GuardRail demo dir (agent scripts + session keys). Render
+// clones the repo with rootDir=web, so demo/ is a sibling of web/.
+function demoDir(): string {
+  return process.env.GUARDRAIL_DEMO_DIR ?? join(process.cwd(), "..", "demo");
+}
+function demoBin(): string {
+  return join(demoDir(), "node_modules", ".bin", "tsx");
+}
 
 /**
  * POST /api/hire
@@ -35,12 +46,19 @@ export async function POST(req: Request) {
   const task = body.task ?? "Hire this GuardRail agent for a scoped onchain task.";
   const budget = typeof body.budget === "number" && body.budget > 0 ? body.budget : 0.1;
 
+  if (!existsSync(demoBin())) {
+    return NextResponse.json(
+      { ok: false, error: "agent demo not installed on this host (GUARDRAIL_DEMO_DIR missing node_modules/.bin/tsx)" },
+      { status: 501 },
+    );
+  }
+
   try {
     const { stdout, stderr } = await execFileP(
-      "npx",
-      ["tsx", "src/hire.ts", provider, task, String(budget)],
+      demoBin(),
+      ["src/hire.ts", provider, task, String(budget)],
       {
-        cwd: "/home/ubuntu/guardrail/demo",
+        cwd: demoDir(),
         timeout: 120_000,
         maxBuffer: 2 * 1024 * 1024,
       },

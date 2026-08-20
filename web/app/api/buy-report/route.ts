@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { promisify } from "node:util";
 
 const execFileP = promisify(execFile);
+
+// Resolve the GuardRail demo dir (holds the agent scripts + session keys).
+// Render clones the repo and sets rootDir=web, so the demo is a sibling of
+// web/. Overridable via GUARDRAIL_DEMO_DIR for non-standard layouts.
+function demoDir(): string {
+  return process.env.GUARDRAIL_DEMO_DIR ?? join(process.cwd(), "..", "demo");
+}
+function demoBin(): string {
+  return join(demoDir(), "node_modules", ".bin", "tsx");
+}
 
 /**
  * POST /api/buy-report
@@ -30,12 +42,19 @@ export async function POST(req: Request) {
 
   const merchantUrl = process.env.GUARDRAIL_MERCHANT_URL ?? "http://127.0.0.1:8787";
 
+  if (!existsSync(demoBin())) {
+    return NextResponse.json(
+      { ok: false, error: "agent demo not installed on this host (GUARDRAIL_DEMO_DIR missing node_modules/.bin/tsx)" },
+      { status: 501 },
+    );
+  }
+
   try {
     const { stdout, stderr } = await execFileP(
-      "npx",
-      ["tsx", "src/x402-buy.ts", `${merchantUrl}/v1/agents/${kind}`],
+      demoBin(),
+      ["src/x402-buy.ts", `${merchantUrl}/v1/agents/${kind}`],
       {
-        cwd: "/home/ubuntu/guardrail/demo",
+        cwd: demoDir(),
         timeout: 90_000,
         maxBuffer: 2 * 1024 * 1024,
       },

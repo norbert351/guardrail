@@ -1,10 +1,14 @@
 # GuardRail web marketplace — Render blueprint.
 # Deploy: "New +" > "Blueprint" > connect github.com/norbert351/guardrail,
-# or "New Web Service" pointing at the repo root.
+# or "New Web Service" pointing at the repo root (rootDir: web).
 #
 # The web app serves the marketplace UI (port 3050) with dynamic onchain
-# reads. The x402 merchant runs separately (see demo/, port 8787); point
-# GUARDRAIL_MERCHANT_URL at it when deployed.
+# reads. The x402 merchant + agent supervisor run as a separate service
+# (see demo/, port 8787); point GUARDRAIL_MERCHANT_URL at it when deployed.
+#
+# The web API routes that buy reports / hire agents shell out to the demo
+# scripts (demo/src/*.ts) via the local tsx bin, so demo/ deps must be
+# installed too — that's why buildCommand installs both web and demo.
 
 services:
   - type: web
@@ -12,7 +16,9 @@ services:
     runtime: node
     repo: https://github.com/norbert351/guardrail
     rootDir: web
-    buildCommand: npm install && npm run build
+    buildCommand: |
+      npm install && npm run build && \
+      cd ../demo && npm install
     startCommand: npx next start -p ${PORT:-3050}
     healthCheckPath: /
     envVars:
@@ -20,5 +26,26 @@ services:
         value: production
       - key: GUARDRAIL_MERCHANT_URL
         value: http://127.0.0.1:8787
+        sync: false
+      - key: GUARDRAIL_DEMO_DIR
+        value: ../demo
+        sync: false
+    plan: free
+
+  - type: web
+    name: guardrail-merchant
+    runtime: node
+    repo: https://github.com/norbert351/guardrail
+    rootDir: demo
+    buildCommand: npm install
+    startCommand: ./node_modules/.bin/tsx src/x402-server.ts --port ${PORT:-8787}
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Signing key for the facilitator/admin wallet that settles x402.
+      # Set this in the Render dashboard under the service's Environment
+      # settings as a secret (never in git).
+      - key: GUARDRAIL_ADMIN_KEY
         sync: false
     plan: free
