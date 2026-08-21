@@ -26,6 +26,17 @@ type Listing = {
   allowlist: string[];
 };
 
+type AgentMetrics = {
+  chain?: string;
+  updatedAt?: string;
+  agents?: {
+    lp?: { name?: string; category?: string; priceUsdPerWbnb?: number; lpTokenBal?: string; lpSharePct?: number };
+    grid?: { name?: string; category?: string; priceUsdPerWbnb?: number; gridBuy?: number; gridSell?: number; stepPct?: number };
+    yield?: { name?: string; category?: string; venue?: string; apyPct?: number };
+    health?: { name?: string; category?: string; positionUsd?: string; supplyApyPct?: number; healthFactor?: number };
+  };
+};
+
 function LiveBadge({ live }: { live: boolean | undefined }) {
   const state =
     live === undefined
@@ -41,6 +52,51 @@ function LiveBadge({ live }: { live: boolean | undefined }) {
   );
 }
 
+function MetricRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-[var(--gr-bg)] px-2.5 py-1.5">
+      <span className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">{label}</span>
+      <span className={`font-mono text-xs font-semibold ${accent ? "text-[var(--gr-magenta)]" : "text-[var(--gr-ink)]"}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function renderMetrics(categoryIndex: number, metrics: AgentMetrics["agents"] | undefined) {
+  const pad = (n: number | undefined, d = 2) => (n === undefined || Number.isNaN(n) ? "—" : n.toFixed(d));
+  const rows: [string, string, boolean?][] = [];
+  if (categoryIndex === 0) {
+    const lp = metrics?.lp;
+    rows.push(["Live price (USDT/WBNB)", pad(lp?.priceUsdPerWbnb), true]);
+    rows.push(["LP token balance", lp?.lpTokenBal !== undefined ? Number(lp.lpTokenBal).toFixed(4) : "—"]);
+    rows.push(["Pool share", lp?.lpSharePct !== undefined ? `${lp.lpSharePct.toFixed(4)}%` : "—"]);
+  } else if (categoryIndex === 1) {
+    const g = metrics?.grid;
+    rows.push(["Live price (USDT/WBNB)", pad(g?.priceUsdPerWbnb), true]);
+    rows.push(["Grid buy level", pad(g?.gridBuy)]);
+    rows.push(["Grid sell level", pad(g?.gridSell)]);
+    rows.push(["Grid step", g?.stepPct ? `±${g.stepPct}%` : "±5%"]);
+  } else if (categoryIndex === 2) {
+    const y = metrics?.yield;
+    rows.push(["Best market", y?.venue ?? "—", true]);
+    rows.push(["Supply APY", y?.apyPct !== undefined ? `${y.apyPct.toFixed(2)}%` : "—"]);
+  } else if (categoryIndex === 3) {
+    const h = metrics?.health;
+    rows.push(["Position (vUSDT USDT)", h?.positionUsd !== undefined ? `$${h.positionUsd}` : "—", true]);
+    rows.push(["Supply APY", h?.supplyApyPct !== undefined ? `${h.supplyApyPct.toFixed(2)}%` : "—"]);
+    rows.push(["Health factor", h?.healthFactor !== undefined ? h.healthFactor.toFixed(2) : "—"]);
+  }
+  if (rows.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      {rows.map(([label, value, accent]) => (
+        <MetricRow key={label} label={label} value={value} accent={accent} />
+      ))}
+    </div>
+  );
+}
+
 function AgentCard({
   name,
   category,
@@ -49,6 +105,7 @@ function AgentCard({
   id,
   categoryIndex,
   allowlist,
+  metrics,
 }: {
   name: string;
   category: string;
@@ -57,6 +114,7 @@ function AgentCard({
   id: number;
   categoryIndex: number;
   allowlist: string[];
+  metrics: AgentMetrics["agents"] | undefined;
 }) {
   return (
     <article className="gr-card group flex h-full flex-col gap-4 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 shadow-[0_1px_2px_rgba(26,20,16,0.04)] transition hover:border-[rgba(194,37,92,0.35)] hover:shadow-[0_8px_30px_rgba(26,20,16,0.07)]">
@@ -75,6 +133,7 @@ function AgentCard({
           allowlist: {allowlist.map((a) => `${a.slice(0, 6)}…${a.slice(-4)}`).join(", ")}
         </p>
       )}
+      {renderMetrics(categoryIndex, metrics)}
       <div className="mt-auto flex flex-col gap-3 border-t border-[var(--gr-border)] pt-4">
         <div className="flex items-center gap-2">
           <HireButton provider={wallet} agentName={name} />
@@ -88,6 +147,7 @@ function AgentCard({
 export default function AgentsPage() {
   const [data, setData] = useState<{ listingCount: number; listings: Listing[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<AgentMetrics["agents"] | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +163,28 @@ export default function AgentsPage() {
     };
     load();
     const t = setInterval(load, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
+
+  // Live metrics (data quality layer) — refreshed less aggressively than the
+  // listings so the onchain reads don't hammer the RPC, but stays current.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/agent-metrics");
+        if (!res.ok) return;
+        const json = (await res.json()) as AgentMetrics;
+        if (!cancelled) setMetrics(json.agents);
+      } catch {
+        /* metrics are best-effort */
+      }
+    };
+    load();
+    const t = setInterval(load, 60_000);
     return () => {
       cancelled = true;
       clearInterval(t);
@@ -131,6 +213,7 @@ export default function AgentsPage() {
           wallet={l.agentWallet}
           live={l.live}
           allowlist={l.allowlist}
+          metrics={metrics}
         />
       </Reveal>
     ));
