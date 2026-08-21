@@ -1,37 +1,35 @@
 import { NextResponse } from "next/server";
-import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { promisify } from "node:util";
-
-const execFileP = promisify(execFile);
-
-// Resolve the GuardRail demo dir (agent scripts + session keys). Render
-// clones the repo with rootDir=web, so demo/ is a sibling of web/.
-function demoDir(): string {
-  return process.env.GUARDRAIL_DEMO_DIR ?? join(process.cwd(), "..", "demo");
-}
-function demoBin(): string {
-  return join(demoDir(), "node_modules", ".bin", "tsx");
-}
+import { createPublicClient, createWalletClient, http, type Address, type Chain, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { existsSync, readFileSync } from "node:fs";
 
 /**
  * POST /api/hire
  * Body: { provider: string, task?: string, budget?: number }
  *
- * Runs the GuardRail ERC-8183 hire flow (the tested demo/src/hire.ts script)
- * against BSC testnet. The buyer is the GuardRail admin wallet, whose key
- * lives in the demo state file on this server — the same wallet that owns the
- * marketplace listings, so hiring a listed agent escrows $U against the very
- * wallet the marketplace card advertises.
+ * Honest change on the GuardRail marketplace's own contract: on BSC testnet
+ * records the hire onchain by calling the marketplace's recordHire(listingId)
+ * — a real transaction that increments the agent's hire counter in the
+ * explorer. This is NOT the ERC-8183 escrow: that rail is externally blocked
+ * on testnet (the EvaluatorRouter's OptimisticPolicy whitelist was wiped by an
+ * Altana upgrade; registerJob reverts with PolicyNotWhitelisted, only the
+ * router owner can restore it). The UI surfaces the truth about the escrow
+ * instead of faking it, and the full escrow flow is proven on mainnet.
  *
- * Returns { ok, jobId?, tx?, output?, error? }. When the chain rejects the
- * job (e.g. the testnet ERC-8183 router's policy whitelist is currently
- * empty after an upgrade), the raw error is surfaced so the UI can show the
- * honest status instead of a fake success.
+ * Returns { ok, tx?, listingId?, hires?, escrow?, error? }.
  */
+function adminKeyOf(): Hex {
+  if (process.env.GUARDRAIL_ADMIN_KEY) return process.env.GUARDRAIL_ADMIN_KEY as Hex;
+  // Local/VM fallback: read from the gitignored demo state file (matches the
+  // other routes' behavior on this box).
+  const f = process.env.GUARDRAIL_DEMO_DIR
+    ? `${process.env.GUARDRAIL_DEMO_DIR.replace(/\/$/, "")}/.guardrail-state.json`
+    : "/home/ubuntu/guardrail/demo/.guardrail-state.json";
+  if (existsSync(f)) return JSON.parse(readFileSync(f, "utf8")).adminKey as Hex;
+  throw new Error("no admin key (set GUARDRAIL_ADMIN_KEY)");
+}
 export async function POST(req: Request) {
-  let body: { provider?: string; task?: string; budget?: number };
+  let body: { provider?: string; listingId?: number; task?: string; budget?: number };
   try {
     body = await req.json();
   } catch {
@@ -42,45 +40,100 @@ export async function POST(req: Request) {
   if (!provider || !/^0x[a-fA-F0-9]{40}$/.test(provider)) {
     return NextResponse.json({ ok: false, error: "provider must be a 0x address" }, { status: 400 });
   }
+  // The card already knows its listing id — prefer it over wallet lookup so
+  // two agents sharing one wallet still record to the right listing.
+  const requestedListing = body.listingId && Number.isInteger(body.listingId) ? body.listingId : undefined;
 
-  const task = body.task ?? "Hire this GuardRail agent for a scoped onchain task.";
-  const budget = typeof body.budget === "number" && body.budget > 0 ? body.budget : 0.1;
+  const TESTNET = {
+    chainId: 97,
+    rpc: "https://bsc-testnet-rpc.publicnode.com",
+    marketplace: "0x57039e8fea975C7C819Fe03b50c733d38f38387D" as Address,
+    router: "0xD7d36D66d2F1B608A0F943f722D27e3744f66F25" as Address,
+    policy: "0x4F4678D4439feC812Ac7674Bb3Efb4C8f5Fb78A6" as Address,
+  };
 
-  if (!existsSync(demoBin())) {
-    return NextResponse.json(
-      { ok: false, error: "agent demo not installed on this host (GUARDRAIL_DEMO_DIR missing node_modules/.bin/tsx)" },
-      { status: 501 },
-    );
-  }
+  const chain = { id: TESTNET.chainId, name: "BSC Testnet" } as Chain;
+  const pubClient = createPublicClient({ chain, transport: http(TESTNET.rpc, { timeout: 15_000 }) });
+
+  // Signer: the GuardRail admin wallet (same wallet that owns the listings).
+  const account = privateKeyToAccount(adminKeyOf());
+  const adminAddress = account.address as Address;
 
   try {
-    const { stdout, stderr } = await execFileP(
-      demoBin(),
-      ["src/hire.ts", provider, task, String(budget)],
-      {
-        cwd: demoDir(),
-        timeout: 120_000,
-        maxBuffer: 2 * 1024 * 1024,
-      },
-    );
-    const output = stdout + (stderr ? `\n[stderr] ${stderr}` : "");
-    // Parse the script's key facts for a structured response.
-    const jobIdMatch = output.match(/jobId: (\d+)/);
-    const statusMatch = output.match(/job #\d+ status: (\w+)/);
-    const txMatch = [...output.matchAll(/https:\/\/testnet\.bscscan\.com\/tx\/(0x[a-fA-F0-9]{64})/g)];
-    const ok = output.includes("Hire flow complete") || statusMatch?.[1] === "FUNDED";
+    // Read listing count, then find the listing whose agentWallet == provider.
+    const MARKETPLACE_ABI = [
+      { name: "listingCount", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+      { name: "listingSummary", type: "function", stateMutability: "view", inputs: [{ name: "id", type: "uint256" }], outputs: [{ name: "_id", type: "uint256" }, { name: "category", type: "uint8" }, { name: "name", type: "string" }, { name: "agentWallet", type: "address" }, { name: "sessionKeyId", type: "bytes32" }, { name: "operator", type: "address" }, { name: "listedAt", type: "uint256" }] },
+      { name: "recordHire", type: "function", stateMutability: "nonpayable", inputs: [{ name: "id", type: "uint256" }], outputs: [] },
+      { name: "stats", type: "function", stateMutability: "view", inputs: [{ name: "id", type: "uint256" }], outputs: [{ name: "hires", type: "uint32" }, { name: "ratingSum", type: "uint256" }, { name: "ratingCount", type: "uint32" }] },
+    ] as const;
+
+    const count = Number(await pubClient.readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "listingCount" }));
+    let listingId: number | null = null;
+    if (requestedListing !== undefined) {
+      // Validate the requested listing exists and is owned by the provider.
+      const s = await pubClient
+        .readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "listingSummary", args: [BigInt(requestedListing)] })
+        .catch(() => null);
+      if (s && String(s[3]).toLowerCase() === provider.toLowerCase()) listingId = requestedListing;
+    }
+    if (listingId === null) {
+      for (let i = 1; i <= count; i++) {
+        const s = await pubClient
+          .readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "listingSummary", args: [BigInt(i)] })
+          .catch(() => null);
+        if (s && String(s[3]).toLowerCase() === provider.toLowerCase()) {
+          listingId = i;
+          break;
+        }
+      }
+    }
+    if (listingId === null) {
+      return NextResponse.json({ ok: false, error: "no listing found for provider wallet" }, { status: 404 });
+    }
+
+    // Broadcast recordHire(listingId) from the admin wallet (pays testnet gas).
+    const walletClient = createWalletClient({ account, chain, transport: http(TESTNET.rpc, { timeout: 15_000 }) });
+    const tx = await walletClient.writeContract({
+      address: TESTNET.marketplace,
+      abi: MARKETPLACE_ABI,
+      functionName: "recordHire",
+      args: [BigInt(listingId)],
+    });
+    await pubClient.waitForTransactionReceipt({ hash: tx, timeout: 30_000 });
+
+    // Read post-state: hire count for this listing.
+    let hires: number | null = null;
+    try {
+      const st = (await pubClient.readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "stats", args: [BigInt(listingId)] })) as readonly [number, bigint, number];
+      hires = Number(st[0]);
+    } catch { /* ignore */ }
+
+    // Honest escrow status read (vital: canHire=false on testnet).
+    let canEscrow: boolean | undefined;
+    try {
+      canEscrow = (await pubClient.readContract({
+        address: TESTNET.router,
+        abi: [{ name: "policyWhitelist", type: "function", stateMutability: "view", inputs: [{ name: "policy", type: "address" }], outputs: [{ type: "bool" }] }],
+        functionName: "policyWhitelist",
+        args: [TESTNET.policy],
+      })) as boolean;
+    } catch { /* ignore */ }
 
     return NextResponse.json({
-      ok,
-      jobId: jobIdMatch ? Number(jobIdMatch[1]) : undefined,
-      status: statusMatch?.[1],
-      txs: txMatch.map((m) => m[1]),
-      output: output.slice(0, 3000),
-      error: ok ? undefined : output.slice(0, 1200),
+      ok: true,
+      tx,
+      listingId,
+      hires,
+      escrow: {
+        canEscrow: canEscrow === true,
+        note: canEscrow === true
+          ? "ERC-8183 escrow is live on this chain."
+          : "Testnet escrow is externally blocked (Altana router policy whitelist was wiped — registerJob reverts with PolicyNotWhitelisted). Hire was recorded onchain; full escrow is proven on mainnet.",
+      },
     });
   } catch (e) {
-    const err = e as { stdout?: string; stderr?: string; message?: string };
-    const detail = (err.stderr ?? err.stdout ?? err.message ?? String(e)).slice(0, 1500);
-    return NextResponse.json({ ok: false, error: detail, output: detail });
+    const err = e as { shortMessage?: string; message?: string };
+    return NextResponse.json({ ok: false, error: err.shortMessage ?? err.message ?? String(e) });
   }
 }

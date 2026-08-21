@@ -136,7 +136,7 @@ function AgentCard({
       {renderMetrics(categoryIndex, metrics)}
       <div className="mt-auto flex flex-col gap-3 border-t border-[var(--gr-border)] pt-4">
         <div className="flex items-center gap-2">
-          <HireButton provider={wallet} agentName={name} />
+          <HireButton provider={wallet} agentName={name} listingId={id} />
           <BuyReportButton kind={KIND_BY_CATEGORY[categoryIndex] ?? "health"} agentName={name} />
         </div>
       </div>

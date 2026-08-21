@@ -13,16 +13,16 @@ type HireStatus = {
 
 type HireResult = {
   ok: boolean;
-  jobId?: number;
-  status?: string;
-  txs?: string[];
-  output?: string;
+  tx?: string;
+  listingId?: number;
+  hires?: number | null;
+  escrow?: { canEscrow?: boolean; note?: string };
   error?: string;
 };
 
 const EXPLORER = "https://testnet.bscscan.com/tx/";
 
-export function HireButton({ provider, agentName }: { provider: string; agentName: string }) {
+export function HireButton({ provider, agentName, listingId }: { provider: string; agentName: string; listingId: number }) {
   const [status, setStatus] = useState<HireStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<HireResult | null>(null);
@@ -43,6 +43,7 @@ export function HireButton({ provider, agentName }: { provider: string; agentNam
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
+          listingId,
           task: `Hire ${agentName} for a scoped onchain task.`,
           budget: 0.1,
         }),
@@ -78,12 +79,18 @@ export function HireButton({ provider, agentName }: { provider: string; agentNam
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2 text-xs">
           {result.ok ? (
             <>
-              <p className="font-medium text-emerald-700">Job {result.jobId} {result.status}</p>
-              {result.txs?.map((tx) => (
-                <a key={tx} href={EXPLORER + tx} target="_blank" rel="noreferrer" className="block font-mono text-zinc-500 underline">
-                  {tx.slice(0, 18)}…
+              <p className="font-medium text-emerald-700">
+                Hire recorded onchain · listing #{result.listingId}
+                {result.hires !== undefined && result.hires !== null ? ` (${result.hires} hire${result.hires === 1 ? "" : "s"})` : ""}
+              </p>
+              {result.tx && (
+                <a href={EXPLORER + result.tx} target="_blank" rel="noreferrer" className="block font-mono text-zinc-500 underline">
+                  {result.tx.slice(0, 18)}…
                 </a>
-              ))}
+              )}
+              {result.escrow && !result.escrow.canEscrow && (
+                <p className="mt-1 text-amber-700">{result.escrow.note}</p>
+              )}
             </>
           ) : (
             <p className="text-red-600 break-words">{result.error ?? "hire failed"}</p>

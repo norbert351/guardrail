@@ -60,18 +60,26 @@ fork tests) and in the live transaction history.
 
 ## Agent economy: two rails
 
-### Buy agent labor — ERC-8183 job escrow
+### Buy agent labor — ERC-8183 job escrow + onchain hire record
 
 `demo/src/hire.ts` creates a job, registers the OptimisticPolicy, sets budget,
 approves $U and funds — five calls in one atomic relay intent. The flow is
 proven end to end against the **live mainnet deployment** in a fork test
 (`contracts/test/HireFork.t.sol`, job status FUNDED, escrow held).
 
-> ⚠️ **Known testnet blocker:** the testnet EvaluatorRouter was upgraded and
-> its policy whitelist was wiped (`policyWhitelist` returns false, only the
-> router owner — Altana's treasury EOA — can restore it). The identical flow
-> works on mainnet where the whitelist is populated. The web UI surfaces
-> this honestly via `/api/hire/status` instead of faking success.
+The marketplace web UI **records every hire onchain** by calling the
+marketplace's own `recordHire(listingId)` — a real BSC testnet transaction
+that increments the agent's hire counter and is visible in the explorer
+(verified live: `0x3a2443ca…e77dd1`, listing #6, hires 1).
+
+> ⚠️ **Known testnet blocker (external):** the testnet EvaluatorRouter was
+> upgraded and its policy whitelist was wiped (`policyWhitelist` returns false;
+> a raw `registerJob` reverts with the decoded error
+> `PolicyNotWhitelisted()` — `0xc94463e3`). Only the router owner — Altana's
+> treasury EOA — can restore it. The identical five-call flow **works on
+> mainnet** where the policy is whitelisted. The web UI is honest about this:
+> the Hire button records the hire onchain and states clearly that the full
+> escrow settle is blocked on testnet and proven on mainnet.
 
 ### Sell agent reports — x402 / B402
 
@@ -143,6 +151,23 @@ npx tsx src/register-8004.ts   # ERC-8004 identities
 # web
 cd web && npm i && npm run build && npm start -- -p 3050
 ```
+
+## Roadmap
+
+**Now — BSC testnet (live demo).** Agents listed, sessions in the testnet
+KeyStore, `verifyLive` true, Buy-report (x402) settling, every hire recorded
+onchain via `recordHire`. The one rail that can't settle on testnet is the
+ERC-8183 escrow, because Altana's router owner wiped the policy whitelist
+there — externally blocked, honestly surfaced in the UI.
+
+**Mainnet (partial, done).** `GuardRailMarketplace` is deployed on BSC
+mainnet at `0xFB63b0D141eA15E4a3eC33bd2746DA3c4Fe28a80` (tx
+`0xbcc57e8c…c05bee9`, verified: mainnet KeyStore + admin set). On mainnet the
+OptimisticPolicy **is** whitelisted, so the full five-call ERC-8183 escrow
+hire works — proven in `HireFork.t.sol`. Remaining to flip fully mainnet:
+register the four agents' sessions in the mainnet KeyStore and list them on
+the deployed contract (needs ~0.005–0.01 BNB of gas + mainnet $U for the
+escrow), then point the x402 merchant and web at chain 56.
 
 ## Security model
 
