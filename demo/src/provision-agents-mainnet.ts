@@ -31,6 +31,10 @@ const WBNB: Address = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"; // mainnet W
 const EXPLORER = "https://bscscan.com/tx/";
 
 const EXPIRY = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+const KEYSTORE_MAINNET: Address = "0x6572427ED530BadcF7375Cf9A4709D8d2b0E7E0a";
+const KEYSTORE_ABI = [
+  { name: "isValidKey", type: "function", stateMutability: "view", inputs: [{ name: "user", type: "address" }, { name: "keyId", type: "bytes32" }], outputs: [{ type: "bool" }] },
+] as const;
 
 const AGENTS = [
   { category: 0, name: "GuardRail LP Guardian" },
@@ -139,20 +143,34 @@ async function main() {
       keys.push(key);
     }
     const sessionSigner = signerFromPrivateKey(key.sessionPk);
+    const keyId = keccak256(sessionSigner.publicKey as Hex);
 
-    console.log(`\n${agent.name} (cat ${agent.category}): granting session on MAINNET KeyStore...`);
-    const session: Session = await client.grantSession({
-      wallet,
-      signer: adminSigner,
-      sessionSigner,
-      permissions: {
-        calls: [{ to: PANCAKE_ROUTER }, { to: WBNB }],
-        spend: [{ limit: parseEther("0.02"), period: "day" }],
-      },
-      expiry: EXPIRY,
-    });
-    const keyId = keccak256(session.publicKey);
-    console.log(`  session granted, keyId ${keyId.slice(0, 18)}...`);
+    // Idempotent: only register a fresh MAINNET KeyStore session if this key
+    // is not already live, so re-running can't revert "key already registered".
+    const registered = await pubClient
+      .readContract({
+        address: KEYSTORE_MAINNET,
+        abi: KEYSTORE_ABI,
+        functionName: "isValidKey",
+        args: [walletAddress, keyId],
+      })
+      .catch(() => false);
+    if (registered) {
+      console.log(`\n${agent.name} (cat ${agent.category}): session already live on mainnet, reusing keyId ${keyId.slice(0, 18)}...`);
+    } else {
+      console.log(`\n${agent.name} (cat ${agent.category}): granting session on MAINNET KeyStore...`);
+      await client.grantSession({
+        wallet,
+        signer: adminSigner,
+        sessionSigner,
+        permissions: {
+          calls: [{ to: PANCAKE_ROUTER }, { to: WBNB }],
+          spend: [{ limit: parseEther("0.02"), period: "day" }],
+        },
+        expiry: EXPIRY,
+      });
+      console.log(`  session granted, keyId ${keyId.slice(0, 18)}...`);
+    }
 
     const listData = encodeFunctionData({
       abi: MARKETPLACE_ABI,

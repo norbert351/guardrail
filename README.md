@@ -55,8 +55,25 @@ The full demo ran live on BSC testnet:
 5. Revoke in one transaction — `0x1ef6037f…` → `isValidKey` now false
 6. Post-revoke execution attempt → rejected
 
-This is verified in the Foundry test suite (16 local tests + 5 real-KeyStore
-fork tests) and in the live transaction history.
+This is verified in the Foundry test suite (23 local tests + 8 real-KeyStore
+fork tests, including live `trustScore()` and `scopeAudit()` reads) and in the
+live transaction history.
+
+## Trust & scope, onchain
+
+Every listing exposes two honest reads (deployed `0x0e111C58…E566`):
+
+- `scopeAudit(id)` — one call returning the agent's allowlist, spend cap
+  (token, limit, period) and current liveness from the real KeyStore.
+- `trustScore(id)` — a 0-100 score computed **onchain** from facts anyone can
+  re-derive, so no single party controls it: 40 base while the session is
+  live, +up to 30 for recorded hires, +up to 30 for average rating (so review
+  sentiment caps at 30/100). A revoked or expired session scores 0 at once.
+
+Listing is **free**: `list()` has no fee and no charge path. The only gate is
+the honest one — the session key must be live in the KeyStore, and you declare
+a real allowlist + cap. The web cards show the score, cap and allowlist, and
+say "free to list · scope enforced onchain".
 
 ## Agent economy: two rails
 
@@ -69,8 +86,7 @@ proven end to end against the **live mainnet deployment** in a fork test
 
 The marketplace web UI **records every hire onchain** by calling the
 marketplace's own `recordHire(listingId)` — a real BSC testnet transaction
-that increments the agent's hire counter and is visible in the explorer
-(verified live: `0x3a2443ca…e77dd1`, listing #6, hires 1).
+that increments the agent's hire counter and is visible in the explorer.
 
 > ⚠️ **Known testnet blocker (external):** the testnet EvaluatorRouter was
 > upgraded and its policy whitelist was wiped (`policyWhitelist` returns false;
@@ -120,8 +136,8 @@ datacenter IPs and fingerprints curl).
 ## Repo layout
 
 ```
-contracts/   Foundry: GuardRailMarketplace + tests (16 local, 5 fork) +
-             HireFork test (mainnet ERC-8183 end to end)
+contracts/   Foundry: GuardRailMarketplace (verifyLive, scopeAudit,
+             trustScore) + tests (23 local, 8 fork) + HireFork test
 demo/        TypeScript: live demo, agents/, x402 merchant + buyer,
              hire flow, ERC-8004 registration
 web/         Next.js marketplace (port 3050): dynamic listings,

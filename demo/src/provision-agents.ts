@@ -34,6 +34,10 @@ const MARKETPLACE: Address = "0x0e111C58E488fE3647F0b45011Ba7334d163E566";
 const PANCAKE_ROUTER: Address = "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3";
 const WBNB: Address = "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd";
 const EXPLORER = "https://testnet.bscscan.com/tx/";
+const KEYSTORE_TESTNET: Address = "0x6b8361C29d05D498b1a12B54A37310f94171E94A";
+const KEYSTORE_ABI = [
+  { name: "isValidKey", type: "function", stateMutability: "view", inputs: [{ name: "user", type: "address" }, { name: "keyId", type: "bytes32" }], outputs: [{ type: "bool" }] },
+] as const;
 
 const EXPIRY = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
 
@@ -166,19 +170,34 @@ async function main() {
       keys.push(key);
     }
     const sessionSigner = signerFromPrivateKey(key.sessionPk);
+    const keyId = keccak256(sessionSigner.publicKey as Hex);
 
-    const session: Session = await client.grantSession({
-      wallet,
-      signer: adminSigner,
-      sessionSigner,
-      permissions: {
-        calls: [{ to: PANCAKE_ROUTER }, { to: WBNB }],
-        spend: [{ limit: parseEther("0.02"), period: "day" }],
-      },
-      expiry: EXPIRY,
-    });
-    const keyId = keccak256(session.publicKey);
-    console.log(`\n${agent.name} (cat ${agent.category}): session granted, keyId ${keyId.slice(0, 18)}...`);
+    // Idempotent: grant a fresh session ONLY if this key isn't already live
+    // in the Altana KeyStore. Re-running must not hit "key already
+    // registered" — it should reuse the live session and just (re)list.
+    const registered = await pubClient
+      .readContract({
+        address: KEYSTORE_TESTNET,
+        abi: KEYSTORE_ABI,
+        functionName: "isValidKey",
+        args: [walletAddress, keyId],
+      })
+      .catch(() => false);
+    if (registered) {
+      console.log(`\n${agent.name} (cat ${agent.category}): session already live, reusing keyId ${keyId.slice(0, 18)}...`);
+    } else {
+      await client.grantSession({
+        wallet,
+        signer: adminSigner,
+        sessionSigner,
+        permissions: {
+          calls: [{ to: PANCAKE_ROUTER }, { to: WBNB }],
+          spend: [{ limit: parseEther("0.02"), period: "day" }],
+        },
+        expiry: EXPIRY,
+      });
+      console.log(`\n${agent.name} (cat ${agent.category}): session granted, keyId ${keyId.slice(0, 18)}...`);
+    }
 
     // Unlist the old listing for this category if it exists.
     const oldId = listingByCategory.get(agent.category);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useReadContract } from "wagmi";
 import { KEYSTORE_ABI, ALTANA_KEYSTORE } from "@/lib/guardrail";
+import { capLabel, clampScore, trustScoreLabel, type ScopeCap } from "@/lib/format";
 import { HireButton } from "@/components/HireButton";
 import { BuyReportButton } from "@/components/BuyReportButton";
 import { ConnectWallet } from "@/components/ConnectWallet";
@@ -25,7 +26,7 @@ type Listing = {
   live: boolean;
   allowlist: string[];
   trustScore: number;
-  cap?: { token?: string; limit?: string; period?: number };
+  cap?: ScopeCap;
 };
 
 type AgentMetrics = {
@@ -100,8 +101,8 @@ function renderMetrics(categoryIndex: number, metrics: AgentMetrics["agents"] | 
 }
 
 function TrustBadge({ score }: { score: number }) {
-  const pct = Math.max(0, Math.min(100, score));
-  const label = score <= 0 ? "not trustable" : score >= 80 ? "high trust" : score >= 50 ? "trusted" : "growing";
+  const pct = clampScore(score);
+  const label = trustScoreLabel(pct);
   return (
     <div className="flex items-center gap-2" title={`Onchain trust score: ${pct}/100`}>
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--gr-mono-chip)]">
@@ -119,15 +120,6 @@ function TrustBadge({ score }: { score: number }) {
       </span>
     </div>
   );
-}
-
-function capLabel(cap: Listing["cap"]): string | null {
-  if (!cap || cap.limit === undefined) return null;
-  const limit = Number(BigInt(cap.limit)) / 1e18;
-  const periodDays = cap.period ? Math.round(cap.period / 86400) : undefined;
-  const native = cap.token === "0x0000000000000000000000000000000000000000";
-  const suffix = native ? "BNB" : "tokens";
-  return periodDays ? `${limit.toFixed(3)} ${suffix}/day cap` : `${limit.toFixed(3)} ${suffix} cap`;
 }
 
 function AgentCard({
