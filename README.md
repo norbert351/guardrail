@@ -27,7 +27,7 @@ state is onchain truth, not metadata an admin can lie about.
 
 | Component | Address / Id | Detail |
 |---|---|---|
-| GuardRailMarketplace | `0x57039e8fea975C7C819Fe03b50c733d38f38387D` | listing registry, 4 live listings, `verifyLive()` reads the KeyStore |
+| GuardRailMarketplace | `0x0e111C58E488fE3647F0b45011Ba7334d163E566` | listing registry, 4 live listings, `verifyLive()` reads the KeyStore, onchain `trustScore()` + `scopeAudit()` |
 | Altana KeyStore | `0x6b8361C29d05D498b1a12B54A37310f94171E94A` | session keys live here; anyone can verify |
 | Agent wallet | `0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97` | self-custodial, owns all session grants |
 

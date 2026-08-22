@@ -79,6 +79,38 @@ export async function GET() {
         /* ignore */
       }
 
+      // Onchain trust score (0-100, computed from liveness + hires + ratings).
+      let trustScore = 0;
+      try {
+        const s = (await client.readContract({
+          address: MARKETPLACE,
+          abi: MARKETPLACE_ABI,
+          functionName: "trustScore",
+          args: [BigInt(i)],
+        })) as bigint;
+        trustScore = Number(s);
+      } catch {
+        /* ignore */
+      }
+
+      // Full scope audit: cap + allowlist in one honest read.
+      let cap: { token?: string; limit?: string; period?: number } = {};
+      try {
+        const sc = (await client.readContract({
+          address: MARKETPLACE,
+          abi: MARKETPLACE_ABI,
+          functionName: "scopeAudit",
+          args: [BigInt(i)],
+        })) as readonly [string, string, string, bigint, bigint, readonly string[], boolean, boolean];
+        if (sc[3] > 0n) {
+          cap.token = sc[2];
+          cap.limit = sc[3].toString();
+          cap.period = Number(sc[4]);
+        }
+      } catch {
+        /* ignore */
+      }
+
       listings.push({
         id: Number(id),
         category: Number(category),
@@ -89,6 +121,8 @@ export async function GET() {
         listedAt: Number(listedAt),
         live,
         allowlist,
+        trustScore,
+        cap,
       });
     }
 

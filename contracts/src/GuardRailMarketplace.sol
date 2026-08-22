@@ -224,6 +224,60 @@ contract GuardRailMarketplace {
         return l.ratingSum / l.ratingCount;
     }
 
+    // ------------------------------------------------------------- trust & scope
+
+    /// @notice A single honest read of exactly what a listed agent is allowed
+    ///         to do right now: the allowlist, spend cap and liveness read
+    ///         straight from the KeyStore. A user never has to stitch multiple
+    ///         calls together to judge an agent's scope before hiring it.
+    function scopeAudit(uint256 id)
+        external
+        view
+        returns (
+            address agentWallet,
+            bytes32 sessionKeyId,
+            address capToken,
+            uint256 capLimit,
+            uint256 capPeriod,
+            address[] memory allowlist,
+            bool active,
+            bool live
+        )
+    {
+        Listing storage l = _requireListed(id);
+        agentWallet = l.agentWallet;
+        sessionKeyId = l.sessionKeyId;
+        capToken = l.cap.token;
+        capLimit = l.cap.limit;
+        capPeriod = l.cap.period;
+        allowlist = l.allowlist;
+        active = l.active;
+        live = l.active && IKeyStore(keyStore).isValidKey(l.agentWallet, l.sessionKeyId);
+    }
+
+    /// @notice A 0-100 trust score computed onchain from facts anyone can
+    ///         re-derive, so no single party controls it:
+    ///           - 40 base while the session is live and the listing is active
+    ///             (a dead or paused agent cannot be trusted as scoped),
+    ///           - +6 per recorded hire, capped at +30 (settled-demand),
+    ///           - +averageRating * 6 (0..5 -> 0..30) once ratings exist.
+    ///         Review sentiment therefore caps at 30 of 100; most of the score
+    ///         is liveness + onchain activity, not declaimed opinions. A
+    ///         revoked/expired session scores 0 immediately.
+    function trustScore(uint256 id) external view returns (uint256 score) {
+        Listing storage l = _requireListed(id);
+        if (!l.active) return 0;
+        if (!IKeyStore(keyStore).isValidKey(l.agentWallet, l.sessionKeyId)) return 0;
+
+        score = 40;
+        uint256 hires = l.hires < 5 ? l.hires : 5;   // cap the demand signal
+        score += hires * 6;                          // 0..30
+        if (l.ratingCount > 0) {
+            score += (l.ratingSum / l.ratingCount) * 6; // avg 0..5 -> 0..30
+        }
+        if (score > 100) score = 100;
+    }
+
     // ------------------------------------------------------------- activity
 
     /// @notice Anyone can record that they hired this agent. Purely

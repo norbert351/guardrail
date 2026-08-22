@@ -24,6 +24,8 @@ type Listing = {
   listedAt: number;
   live: boolean;
   allowlist: string[];
+  trustScore: number;
+  cap?: { token?: string; limit?: string; period?: number };
 };
 
 type AgentMetrics = {
@@ -97,6 +99,37 @@ function renderMetrics(categoryIndex: number, metrics: AgentMetrics["agents"] | 
   );
 }
 
+function TrustBadge({ score }: { score: number }) {
+  const pct = Math.max(0, Math.min(100, score));
+  const label = score <= 0 ? "not trustable" : score >= 80 ? "high trust" : score >= 50 ? "trusted" : "growing";
+  return (
+    <div className="flex items-center gap-2" title={`Onchain trust score: ${pct}/100`}>
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--gr-mono-chip)]">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: `var(--gr-magenta)` }}
+        />
+      </div>
+      <span className="font-mono text-xs font-semibold" style={{ color: `var(--gr-ink)` }}>
+        {pct}
+        <span className="text-[var(--gr-ink-3)]">/100</span>
+      </span>
+      <span className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]" style={{ color: `var(--gr-ink-3)` }}>
+        · {label}
+      </span>
+    </div>
+  );
+}
+
+function capLabel(cap: Listing["cap"]): string | null {
+  if (!cap || cap.limit === undefined) return null;
+  const limit = Number(BigInt(cap.limit)) / 1e18;
+  const periodDays = cap.period ? Math.round(cap.period / 86400) : undefined;
+  const native = cap.token === "0x0000000000000000000000000000000000000000";
+  const suffix = native ? "BNB" : "tokens";
+  return periodDays ? `${limit.toFixed(3)} ${suffix}/day cap` : `${limit.toFixed(3)} ${suffix} cap`;
+}
+
 function AgentCard({
   name,
   category,
@@ -105,6 +138,8 @@ function AgentCard({
   id,
   categoryIndex,
   allowlist,
+  trustScore,
+  cap,
   metrics,
 }: {
   name: string;
@@ -114,6 +149,8 @@ function AgentCard({
   id: number;
   categoryIndex: number;
   allowlist: string[];
+  trustScore: number;
+  cap: Listing["cap"];
   metrics: AgentMetrics["agents"] | undefined;
 }) {
   return (
@@ -128,11 +165,16 @@ function AgentCard({
       <p className="font-mono text-xs text-[var(--gr-ink-3)] break-all">
         {wallet.slice(0, 10)}…{wallet.slice(-6)} · listing #{id}
       </p>
+      <TrustBadge score={trustScore} />
       {allowlist.length > 0 && (
         <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">
           allowlist: {allowlist.map((a) => `${a.slice(0, 6)}…${a.slice(-4)}`).join(", ")}
         </p>
       )}
+      {capLabel(cap) && (
+        <p className="font-mono text-[0.6875rem] text-[var(--gr-live)]">{capLabel(cap)}</p>
+      )}
+      <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">free to list · scope enforced onchain</p>
       {renderMetrics(categoryIndex, metrics)}
       <div className="mt-auto flex flex-col gap-3 border-t border-[var(--gr-border)] pt-4">
         <div className="flex items-center gap-2">
@@ -213,6 +255,8 @@ export default function AgentsPage() {
           wallet={l.agentWallet}
           live={l.live}
           allowlist={l.allowlist}
+          trustScore={l.trustScore}
+          cap={l.cap}
           metrics={metrics}
         />
       </Reveal>

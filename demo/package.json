@@ -8,6 +8,7 @@
     "demo": "tsx src/demo.ts",
     "list": "tsx src/list.ts",
     "provision": "tsx src/provision-agents.ts",
+    "relist": "tsx src/relist-live.ts",
     "agent:health": "tsx src/agents/health-guard.ts",
     "agent:yield": "tsx src/agents/yield-router.ts",
     "agent:lp": "tsx src/agents/lp-guardian.ts",

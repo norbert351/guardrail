@@ -18,7 +18,7 @@ type HireResult = {
 };
 
 const EXPLORER = "https://testnet.bscscan.com/tx/";
-const MARKETPLACE = "0x57039e8fea975C7C819Fe03b50c733d38f38387D" as `0x${string}`;
+const MARKETPLACE = "0x0e111C58E488fE3647F0b45011Ba7334d163E566" as `0x${string}`;
 const MARKETPLACE_ABI = [
   { name: "recordHire", type: "function", stateMutability: "nonpayable", inputs: [{ name: "id", type: "uint256" }], outputs: [] },
 ] as const;

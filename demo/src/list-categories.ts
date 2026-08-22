@@ -29,7 +29,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const MARKETPLACE: Address = "0x57039e8fea975C7C819Fe03b50c733d38f38387D";
+const MARKETPLACE: Address = "0x0e111C58E488fE3647F0b45011Ba7334d163E566";
 const PANCAKE_ROUTER: Address = "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3";
 const WBNB: Address = "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd";
 const EXPLORER = "https://testnet.bscscan.com/tx/";

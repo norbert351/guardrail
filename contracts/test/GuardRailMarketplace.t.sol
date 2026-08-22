@@ -232,6 +232,111 @@ contract GuardRailMarketplaceTest is Test {
         assertEq(hires, 1);
     }
 
+    // ------------------------------------------------------------ trust & scope
+
+    function test_ScopeAuditReturnsFullScope() public {
+        vm.prank(operator);
+        uint256 id = marketplace.list(
+            GuardRailMarketplace.Category.Rebalancing, "LP Guard", agentWallet, sessionKeyId, cap, _allowlist()
+        );
+
+        (
+            address w,
+            bytes32 keyId,
+            address capToken,
+            uint256 capLimit,
+            uint256 capPeriod,
+            address[] memory allowlist,
+            bool active,
+            bool live
+        ) = marketplace.scopeAudit(id);
+
+        assertEq(w, agentWallet);
+        assertEq(keyId, sessionKeyId);
+        assertEq(capToken, address(0));
+        assertEq(capLimit, cap.limit);
+        assertEq(capPeriod, cap.period);
+        assertEq(allowlist.length, 2);
+        assertEq(allowlist[0], router);
+        assertEq(allowlist[1], usdt);
+        assertTrue(active);
+        assertTrue(live);
+    }
+
+    function test_ScopeAuditLiveFlipsFalseAfterRevoke() public {
+        vm.prank(operator);
+        uint256 id = marketplace.list(
+            GuardRailMarketplace.Category.Rebalancing, "LP Guard", agentWallet, sessionKeyId, cap, _allowlist()
+        );
+        keyStore.revokeKey(agentWallet, sessionKeyId);
+        (,,,,,,, bool live) = marketplace.scopeAudit(id);
+        assertFalse(live);
+    }
+
+    function test_TrustScoreBaseLiveIs40() public {
+        vm.prank(operator);
+        uint256 id = marketplace.list(
+            GuardRailMarketplace.Category.GridTrading, "Grid", agentWallet, sessionKeyId, cap, _allowlist()
+        );
+        // Fresh, live, scoped agent: 40 base, no hires, no ratings.
+        assertEq(marketplace.trustScore(id), 40);
+    }
+
+    function test_TrustScoreGrowsWithHiresAndRatings() public {
+        vm.prank(operator);
+        uint256 id = marketplace.list(
+            GuardRailMarketplace.Category.GridTrading, "Grid", agentWallet, sessionKeyId, cap, _allowlist()
+        );
+        // 3 hires -> +18.
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(hirer);
+            marketplace.recordHire(id);
+        }
+        assertEq(marketplace.trustScore(id), 58);
+        // Average rating 4 -> +24 => 82.
+        vm.prank(hirer);
+        marketplace.rate(id, 4);
+        vm.prank(makeAddr("b"));
+        marketplace.rate(id, 4);
+        assertEq(marketplace.trustScore(id), 82);
+    }
+
+    function test_TrustScoreCapsAtHundred() public {
+        vm.prank(operator);
+        uint256 id = marketplace.list(
+            GuardRailMarketplace.Category.GridTrading, "Grid", agentWallet, sessionKeyId, cap, _allowlist()
+        );
+        // Max hires (5 -> +30) + max rating 5 (*6 = +30) => 40+30+30 = 100.
+        for (uint256 i = 0; i < 7; i++) {
+            vm.prank(makeAddr(string.concat("h", vm.toString(i))));
+            marketplace.recordHire(id);
+        }
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(makeAddr(string.concat("r", vm.toString(i))));
+            marketplace.rate(id, 5);
+        }
+        assertEq(marketplace.trustScore(id), 100);
+    }
+
+    function test_TrustScoreZeroWhenSessionRevoked() public {
+        vm.prank(operator);
+        uint256 id = marketplace.list(
+            GuardRailMarketplace.Category.GridTrading, "Grid", agentWallet, sessionKeyId, cap, _allowlist()
+        );
+        keyStore.revokeKey(agentWallet, sessionKeyId);
+        assertEq(marketplace.trustScore(id), 0);
+    }
+
+    function test_TrustScoreZeroWhenPaused() public {
+        vm.prank(operator);
+        uint256 id = marketplace.list(
+            GuardRailMarketplace.Category.GridTrading, "Grid", agentWallet, sessionKeyId, cap, _allowlist()
+        );
+        vm.prank(operator);
+        marketplace.toggleActive(id, false);
+        assertEq(marketplace.trustScore(id), 0);
+    }
+
     // ------------------------------------------------------------ admin
 
     function test_AdminEmergencyUnlist() public {

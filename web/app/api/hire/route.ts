@@ -47,7 +47,7 @@ export async function POST(req: Request) {
   const TESTNET = {
     chainId: 97,
     rpc: "https://bsc-testnet-rpc.publicnode.com",
-    marketplace: "0x57039e8fea975C7C819Fe03b50c733d38f38387D" as Address,
+    marketplace: "0x0e111C58E488fE3647F0b45011Ba7334d163E566" as Address,
     router: "0xD7d36D66d2F1B608A0F943f722D27e3744f66F25" as Address,
     policy: "0x4F4678D4439feC812Ac7674Bb3Efb4C8f5Fb78A6" as Address,
   };

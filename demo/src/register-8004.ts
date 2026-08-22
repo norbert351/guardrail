@@ -110,7 +110,7 @@ async function main() {
         uri,
         [
           { metadataKey: "category", metadataValue: bytesToHex(new TextEncoder().encode(agent.category)) },
-          { metadataKey: "marketplace", metadataValue: bytesToHex(new TextEncoder().encode("0x57039e8fea975C7C819Fe03b50c733d38f38387D")) },
+          { metadataKey: "marketplace", metadataValue: bytesToHex(new TextEncoder().encode("0x0e111C58E488fE3647F0b45011Ba7334d163E566")) },
         ],
       ],
     });

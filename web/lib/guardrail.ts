@@ -10,7 +10,7 @@ export const ALTANA_KEYSTORE =
 
 // GuardRailMarketplace deployment on BSC testnet (chain 97).
 export const MARKETPLACE =
-  "0x57039e8fea975C7C819Fe03b50c733d38f38387D" as `0x${string}`;
+  "0x0e111C58E488fE3647F0b45011Ba7334d163E566" as `0x${string}`;
 
 // The live demo agent wallet (from the GuardRail demo run).
 export const DEMO_AGENT_WALLET =
@@ -59,6 +59,29 @@ export const MARKETPLACE_ABI = [
     stateMutability: "view",
     inputs: [{ name: "id", type: "uint256" }],
     outputs: [{ type: "bool" }],
+  },
+  {
+    name: "trustScore",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "scopeAudit",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [
+      { name: "agentWallet", type: "address" },
+      { name: "sessionKeyId", type: "bytes32" },
+      { name: "capToken", type: "address" },
+      { name: "capLimit", type: "uint256" },
+      { name: "capPeriod", type: "uint256" },
+      { name: "allowlist", type: "address[]" },
+      { name: "active", type: "bool" },
+      { name: "live", type: "bool" },
+    ],
   },
 ] as const;
 
