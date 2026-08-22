@@ -14,6 +14,7 @@
  */
 
 import { createPublicClient, createWalletClient, http, encodeFunctionData, decodeEventLog, bytesToHex, type Address, type Hex } from "viem";
+import { bscTestnet } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -94,8 +95,8 @@ function buildAgentUri(name: string, desc: string, endpoint: string): string {
 async function main() {
   const key = loadAdminKey();
   const account = privateKeyToAccount(key);
-  const pubClient = createPublicClient({ chain: { id: 97, name: "BSC Testnet" } as any, transport: http(RPC, { timeout: 15_000 }) });
-  const walletClient = createWalletClient({ account, chain: { id: 97, name: "BSC Testnet" } as any, transport: http(RPC, { timeout: 15_000 }) });
+  const pubClient = createPublicClient({ chain: bscTestnet, transport: http(RPC, { timeout: 15_000 }) });
+  const walletClient = createWalletClient({ account, chain: bscTestnet, transport: http(RPC, { timeout: 15_000 }) });
 
   console.log(`ERC-8004 registry: ${REGISTRY}`);
   console.log(`registering from wallet ${account.address}\n`);
@@ -118,6 +119,7 @@ async function main() {
     const hash = await walletClient.sendTransaction({
       to: REGISTRY,
       data,
+      chain: bscTestnet,
     });
     console.log(`${agent.name}: registering... ${EXPLORER}${hash}`);
 

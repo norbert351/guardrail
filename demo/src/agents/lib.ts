@@ -20,6 +20,7 @@ import {
   type Session,
 } from "@altananetwork/sdk";
 import { createPublicClient, http, type Address, type Hex } from "viem";
+import { bsc } from "viem/chains";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ClaudeClient, ClaudeError, type ClaudeResult } from "../llm.js";
@@ -136,7 +137,7 @@ export async function loadAgent(category: number): Promise<LoadedAgent> {
   // Mainnet client for read-only market data (Venus APRs, real pool state).
   // Testnet RPC does not serve mainnet contracts and hangs on those reads.
   const mainnetPubClient = createPublicClient({
-    chain: { id: 56, name: "BNB Smart Chain" } as any,
+    chain: bsc,
     transport: http("https://bsc-rpc.publicnode.com", { timeout: 10_000 }),
   });
 

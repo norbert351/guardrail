@@ -110,7 +110,7 @@ async function main() {
       "GuardRail LP Guardian",
       walletAddress,
       keyId,
-      { token: "0x0000000000000000000000000000000000000000", limit: cap, period: 86400 },
+      { token: "0x0000000000000000000000000000000000000000", limit: cap, period: 86400n },
       [PANCAKE_ROUTER, WBNB],
     ],
   });

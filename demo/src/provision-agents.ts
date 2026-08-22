@@ -206,7 +206,7 @@ async function main() {
         agent.name,
         walletAddress,
         keyId,
-        { token: "0x0000000000000000000000000000000000000000", limit: parseEther("0.02"), period: 86400 },
+        { token: "0x0000000000000000000000000000000000000000", limit: parseEther("0.02"), period: 86400n },
         [PANCAKE_ROUTER, WBNB],
       ],
     });

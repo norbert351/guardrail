@@ -43,7 +43,7 @@ async function checkOnce() {
     address: PAIR,
     abi: PAIR_ABI,
     functionName: "getReserves",
-  })) as readonly [bigint, bigint, bigint];
+  })) as readonly [bigint, bigint, number];
 
   // token0 = USDT, token1 = WBNB. Price = USDT per WBNB.
   const price = Number(reserves[0]) / Number(reserves[1]);

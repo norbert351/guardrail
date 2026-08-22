@@ -32,8 +32,6 @@ async function main() {
   const client = new ClaudeClient(
     { authToken: "sk-test-token", baseUrl: "https://agentrouter.org", model: "claude-opus-4-8" },
   );
-  // @ts-expect-error test seam
-  (client as unknown as { _fetch?: never }).constructor; // noop to keep types quiet
   (globalThis as Record<string, unknown>).fetch = fakeFetch;
 
   const result = await client.complete({

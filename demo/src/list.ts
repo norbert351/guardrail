@@ -66,6 +66,13 @@ const MARKETPLACE_ABI = [
     outputs: [{ name: "", type: "bool" }],
   },
   {
+    name: "listingCount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
     name: "listingSummary",
     type: "function",
     stateMutability: "view",
@@ -122,7 +129,7 @@ async function main() {
       "GuardRail GridBot",
       walletAddress,
       keyId,
-      { token: "0x0000000000000000000000000000000000000000", limit: SPEND_CAP, period: 86400 },
+      { token: "0x0000000000000000000000000000000000000000", limit: SPEND_CAP, period: 86400n },
       [PANCAKE_ROUTER, WBNB],
     ],
   });
@@ -143,12 +150,12 @@ async function main() {
   }).catch(() => 1n);
   console.log("listingCount:", id.toString());
 
-  const live = await pubClient.readContract({
+  const live = (await pubClient.readContract({
     address: MARKETPLACE,
     abi: MARKETPLACE_ABI,
     functionName: "verifyLive",
     args: [id],
-  });
+  })) as boolean;
   console.log("verifyLive(listing):", live);
 }
 
