@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useReadContract } from "wagmi";
-import { KEYSTORE_ABI, ALTANA_KEYSTORE } from "@/lib/guardrail";
+import { ALTANA_KEYSTORE } from "@/lib/guardrail";
 import { capLabel, clampScore, trustScoreLabel, type ScopeCap } from "@/lib/format";
 import { HireButton } from "@/components/HireButton";
 import { BuyReportButton } from "@/components/BuyReportButton";
@@ -225,13 +224,7 @@ export default function AgentsPage() {
     };
   }, []);
 
-  const { data: demoKeyLive } = useReadContract({
-    address: ALTANA_KEYSTORE,
-    abi: KEYSTORE_ABI,
-    functionName: "isValidKey",
-    args: ["0xa847F3BBF69E8A888b59BC8729ce787E0dB5be97" as `0x${string}`, "0xd3627c9ab2a0b45751fe0cd32150b1124239bfcc830ddcef1b190bcfdd07288a" as `0x${string}`],
-    query: { refetchInterval: 15_000 },
-  });
+  const { data: demoKeyLive } = { data: undefined };
 
   const listings = data?.listings ?? [];
   const live = listings.filter((l) => l.live).length;
@@ -287,7 +280,16 @@ export default function AgentsPage() {
               <div className="mt-3 flex items-center gap-2 font-mono text-xs text-[var(--gr-ink-2)]">
                 <span>KeyStore</span>
                 <code className="rounded bg-[var(--gr-mono-chip)] px-1.5 py-0.5 text-[0.6875rem]">{ALTANA_KEYSTORE.slice(0, 14)}…</code>
-                <LiveBadge live={demoKeyLive} />
+                {data ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gr-live-soft)] px-2.5 py-0.5 font-mono text-[0.6875rem] font-medium text-[var(--gr-live)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--gr-live)]" />
+                    {live} of {listings.length} sessions live
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-200 px-2.5 py-0.5 font-mono text-[0.6875rem] font-medium text-zinc-500">
+                    checking…
+                  </span>
+                )}
               </div>
             </div>
           </div>
