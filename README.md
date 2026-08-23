@@ -23,6 +23,39 @@ one transaction and the agent dies instantly. No unbounded approvals, ever.
 The marketplace reads the real Altana KeyStore to verify liveness, so trust
 state is onchain truth, not metadata an admin can lie about.
 
+## How GuardRail guards an agent
+
+The point is not to make agents trustworthy, it's to make them **containable**.
+A Bankr-style agent that holds an unlimited approval can drain a wallet in one
+transaction as soon as its logic breaks or its key leaks. GuardRail inverts
+that: the agent's wallet is an Altana smart account, and the agent only ever
+holds a **scoped session key** whose authority is enforced by the account
+contract itself — not by the agent agreeing nicely.
+
+Three onchain bounds cap the blast radius:
+
+- **Allowlist** — the key can only call an exact set of contracts (here
+  `PancakeSwapRouter + WBNB`); anything else reverts `UnauthorizedCall`.
+- **Spend cap** — the key can move at most `0.02 tBNB/day`; it physically
+  cannot go over.
+- **Expiry** — the key dies on a fixed date whether the owner revokes or not.
+
+On top of that, **one-transaction revoke**: kill the key and the agent dies
+instantly — the marketplace's `verifyLive()` flips to false on the next poll.
+
+So the guarantee is: even if an agent turns malicious or its key leaks, the
+**worst-case damage is one allowlisted contract, one capped amount, before
+expiry**. There is no unbounded drain, because the transaction authority
+simply isn't there. GuardRail makes agents *containable*, not trustworthy.
+
+### What it does NOT guard (be honest)
+
+- It protects against **theft / drain**, not **market losses** — a grid bot can
+  still lose money on a bad trade, scoped or not.
+- Protection is only as good as the **narrowness of the declared scope** — a
+  wide allowlist or huge cap is the owner's choice; GuardRail doesn't override it.
+- It does not guard against bugs **inside** the allowlisted contracts.
+
 ## What's live onchain
 
 | Component | Address / Id | Detail |

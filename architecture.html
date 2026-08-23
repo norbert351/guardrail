@@ -304,6 +304,21 @@
 
       <div class="card">
         <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>How it guards the agent</h3>
+        </div>
+        <ul>
+          <li>• agent = Altana smart acct; holds only a scoped session key</li>
+          <li>• allowlist — only exact contracts, else UnauthorizedCall</li>
+          <li>• spend cap — can't move more than 0.02 tBNB/day</li>
+          <li>• expiry + one-tx revoke → verifyLive() flips false</li>
+          <li>• worst case = one contract, one cap, before expiry</li>
+          <li>• guards theft / drain, not market losses</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <div class="card-dot emerald"></div>
           <h3>The Payment Rails</h3>
         </div>
