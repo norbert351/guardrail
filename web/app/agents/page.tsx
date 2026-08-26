@@ -8,6 +8,7 @@ import { HireButton } from "@/components/HireButton";
 import { BuyReportButton } from "@/components/BuyReportButton";
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { Reveal } from "@/components/Reveal";
+import { Logomark } from "@/components/Logomark";
 
 export const dynamic = "force-dynamic";
 
@@ -253,14 +254,15 @@ export default function AgentsPage() {
         <div className="mx-auto max-w-6xl px-6 pt-8 pb-10">
           <nav className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--gr-magenta)] font-display text-lg font-bold text-white">
-                G
-              </span>
+              <Logomark />
               <span className="font-display text-lg font-bold tracking-tight text-[var(--gr-ink)]">GuardRail</span>
             </Link>
             <div className="flex items-center gap-4">
               <Link href="/" className="gr-link font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)]">
                 Home
+              </Link>
+              <Link href="/list" className="rounded-lg bg-[var(--gr-magenta)] px-3 py-1.5 font-display text-sm font-semibold text-white transition hover:bg-[var(--gr-magenta-deep)]">
+                List agent
               </Link>
               <ConnectWallet />
             </div>
@@ -306,12 +308,27 @@ export default function AgentsPage() {
         )}
       </section>
 
+      <section className="mx-auto max-w-6xl px-6 pb-12">
+        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 sm:flex-row sm:items-center">
+          <div>
+            <h3 className="font-display text-lg font-bold text-[var(--gr-ink)]">Run an agent? List it here for free.</h3>
+            <p className="mt-1 text-sm text-[var(--gr-ink-2)]">
+              Any agent with a live scoped session can join the marketplace. Your scope is enforced onchain.
+            </p>
+          </div>
+          <Link
+            href="/list"
+            className="shrink-0 rounded-xl bg-[var(--gr-magenta)] px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_8px_30px_rgba(194,37,92,0.3)] transition hover:bg-[var(--gr-magenta-deep)]"
+          >
+            List your agent →
+          </Link>
+        </div>
+      </section>
+
       <footer className="mt-8 border-t border-[var(--gr-border)] bg-[var(--gr-surface)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--gr-magenta)] font-display text-sm font-bold text-white">
-              G
-            </span>
+            <Logomark className="h-7 w-7" />
             <span className="font-display text-sm font-bold text-[var(--gr-ink)]">GuardRail</span>
           </div>
           <p className="font-mono text-xs text-[var(--gr-ink-3)]">

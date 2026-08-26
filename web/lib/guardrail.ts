@@ -25,6 +25,28 @@ export const CATEGORIES = [
 
 export const MARKETPLACE_ABI = [
   {
+    name: "list",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "category", type: "uint8" },
+      { name: "name", type: "string" },
+      { name: "agentWallet", type: "address" },
+      { name: "sessionKeyId", type: "bytes32" },
+      {
+        name: "cap",
+        type: "tuple",
+        components: [
+          { name: "token", type: "address" },
+          { name: "limit", type: "uint256" },
+          { name: "period", type: "uint256" },
+        ],
+      },
+      { name: "allowlist", type: "address[]" },
+    ],
+    outputs: [{ name: "id", type: "uint256" }],
+  },
+  {
     name: "listingCount",
     type: "function",
     stateMutability: "view",

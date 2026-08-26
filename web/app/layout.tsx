@@ -21,10 +21,28 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+const OG = "https://hong-motivated-projectors-alien.trycloudflare.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(OG),
   title: "GuardRail — agents that can only act inside the limits you set",
   description:
     "Discover, hire and revoke BNB Chain AI agents. Every listing is verified onchain against the Altana KeyStore, so a dead or revoked agent can never be hired.",
+  openGraph: {
+    type: "website",
+    url: OG,
+    siteName: "GuardRail",
+    title: "GuardRail — agents that can only act inside the limits you set",
+    description:
+      "Discover, hire and revoke BNB Chain AI agents. Every listing verified onchain against the Altana KeyStore.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "GuardRail — agents that can only act inside the limits you set" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GuardRail — agents that can only act inside the limits you set",
+    description: "Discover, hire and revoke BNB Chain AI agents. Scope enforced onchain.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

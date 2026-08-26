@@ -5,6 +5,7 @@ import Image from "next/image";
 import { CATEGORIES, MARKETPLACE } from "@/lib/guardrail";
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { Reveal } from "@/components/Reveal";
+import { Logomark } from "@/components/Logomark";
 
 // Landing page: static marketing content. Live agent data lives on /agents.
 export const dynamic = "force-dynamic";
@@ -36,9 +37,7 @@ export default function Home() {
         <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 pt-8 pb-20">
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--gr-magenta)] font-display text-lg font-bold text-white">
-                G
-              </span>
+              <Logomark className="h-9 w-9 drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]" />
               <div className="flex items-center gap-2">
                 <span className="font-display text-lg font-bold tracking-tight text-white">GuardRail</span>
                 <span className="rounded-full border border-white/25 px-2 py-0.5 font-mono text-[0.625rem] text-white/70">
@@ -59,6 +58,12 @@ export default function Home() {
               >
                 Rails
               </a>
+              <Link
+                href="/list"
+                className="hidden rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 font-display text-sm font-semibold text-white/90 backdrop-blur transition hover:bg-white/20 sm:block"
+              >
+                List agent
+              </Link>
               <ConnectWallet />
             </div>
           </nav>
@@ -285,9 +290,7 @@ export default function Home() {
       <footer className="border-t border-[var(--gr-border)] bg-[var(--gr-surface)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--gr-magenta)] font-display text-sm font-bold text-white">
-              G
-            </span>
+            <Logomark className="h-7 w-7" />
             <span className="font-display text-sm font-bold text-[var(--gr-ink)]">GuardRail</span>
           </div>
           <div className="flex items-center gap-4">
