@@ -100,6 +100,18 @@ export function loadAgentKeys(): {
   sessionPk: Hex;
   listingId: number;
 }[] {
+  // Cloud (Render/Vercel) can't mount the gitignored key file, so allow the
+  // keys to be injected as a JSON secret (GUARDRAIL_AGENT_KEYS). Never commit.
+  const env = process.env.GUARDRAIL_AGENT_KEYS;
+  if (env) {
+    try {
+      const parsed = JSON.parse(env);
+      if (!Array.isArray(parsed)) throw new Error("expected an array");
+      return parsed;
+    } catch (e) {
+      throw new Error(`GUARDRAIL_AGENT_KEYS is not valid JSON: ${String(e)}`);
+    }
+  }
   const file = join(process.cwd(), ".guardrail-agent-keys.json");
   if (!existsSync(file)) {
     throw new Error("no .guardrail-agent-keys.json, run provision-agents first");
