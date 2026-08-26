@@ -2,18 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ALTANA_KEYSTORE } from "@/lib/guardrail";
+import { useAccount, useWalletClient } from "wagmi";
+import { ALTANA_KEYSTORE, MARKETPLACE, MARKETPLACE_ABI } from "@/lib/guardrail";
 import { capLabel, clampScore, trustScoreLabel, type ScopeCap } from "@/lib/format";
 import { HireButton } from "@/components/HireButton";
 import { BuyReportButton } from "@/components/BuyReportButton";
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { Reveal } from "@/components/Reveal";
 import { Logomark } from "@/components/Logomark";
+import { SafetyProof } from "@/components/SafetyProof";
 
 export const dynamic = "force-dynamic";
 
 const CATEGORY_NAMES = ["Rebalancing", "Grid Trading", "Yield Optimisation", "Health Factor Monitoring"];
 const KIND_BY_CATEGORY = ["lp", "grid", "yield", "health"] as const;
+// GuardRail's 4 agent identities on the ERC-8004 registry (per listing index).
+const IDENTITY_BY_CATEGORY = [1790, 1791, 1792, 1793] as const;
+const SCAN = "https://8004scan.io/agents";
 
 type Listing = {
   id: number;
@@ -24,6 +29,7 @@ type Listing = {
   operator: `0x${string}`;
   listedAt: number;
   live: boolean;
+  active: boolean;
   allowlist: string[];
   trustScore: number;
   cap?: ScopeCap;
@@ -122,6 +128,120 @@ function TrustBadge({ score }: { score: number }) {
   );
 }
 
+const EXPLORER = "https://testnet.bscscan.com/tx/";
+
+type OpResult = { hash?: string; error?: string };
+
+function OperatorControls({ operator, id, active }: { operator: `0x${string}`; id: number; active: boolean }) {
+  const { address, isConnected } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<OpResult | null>(null);
+  const [needWallet, setNeedWallet] = useState(false);
+
+  const isOperator =
+    isConnected && address !== undefined && address.toLowerCase() === operator.toLowerCase();
+
+  if (!isOperator) return null;
+
+  async function toggle() {
+    setBusy(true);
+    setResult(null);
+    setNeedWallet(false);
+    try {
+      if (!walletClient || !address) {
+        setNeedWallet(true);
+        setResult({ error: "Connect the operator wallet first." });
+        return;
+      }
+      const hash = await walletClient.writeContract({
+        address: MARKETPLACE,
+        abi: MARKETPLACE_ABI,
+        functionName: "toggleActive",
+        args: [BigInt(id), !active],
+        account: address,
+        chain: undefined as any,
+      });
+      setResult({ hash });
+    } catch (e) {
+      const err = e as { shortMessage?: string; message?: string };
+      setResult({ error: err.shortMessage ?? err.message ?? String(e) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlist() {
+    setBusy(true);
+    setResult(null);
+    setNeedWallet(false);
+    try {
+      if (!walletClient || !address) {
+        setNeedWallet(true);
+        setResult({ error: "Connect the operator wallet first." });
+        return;
+      }
+      const hash = await walletClient.writeContract({
+        address: MARKETPLACE,
+        abi: MARKETPLACE_ABI,
+        functionName: "unlist",
+        args: [BigInt(id)],
+        account: address,
+        chain: undefined as any,
+      });
+      setResult({ hash });
+    } catch (e) {
+      const err = e as { shortMessage?: string; message?: string };
+      setResult({ error: err.shortMessage ?? err.message ?? String(e) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-[var(--gr-border)] bg-[var(--gr-bg)] p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-2)]">
+          You are the operator of listing #{id}
+        </p>
+        <span className={`rounded-full px-2 py-0.5 font-mono text-[0.625rem] font-medium ${active ? "bg-[var(--gr-live-soft)] text-[var(--gr-live)]" : "bg-[var(--gr-warn-soft)] text-[var(--gr-warn)]"}`}>
+          {active ? "listed" : "paused"}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-col gap-2">
+        <button
+          onClick={toggle}
+          disabled={busy}
+          className="rounded-lg border border-[var(--gr-border)] px-3 py-1.5 text-sm font-medium text-[var(--gr-ink)] transition hover:border-[var(--gr-magenta)] hover:text-[var(--gr-magenta)] disabled:opacity-50"
+        >
+          {needWallet && !isConnected ? "Connect wallet to manage" : active ? "Pause listing" : "Resume listing"}
+        </button>
+        <button
+          onClick={unlist}
+          disabled={busy}
+          className="rounded-lg border border-[var(--gr-dead)]/40 px-3 py-1.5 text-sm font-medium text-[var(--gr-dead)] transition hover:bg-[var(--gr-dead-soft)] disabled:opacity-50"
+        >
+          Unlist
+        </button>
+      </div>
+      {result && (
+        <div className="mt-2 rounded-lg border border-[var(--gr-border)] bg-[var(--gr-surface)] p-2 text-xs">
+          {result.hash ? (
+            <>
+              <p className="font-medium text-emerald-700">Sent · {active ? "paused" : "resumed"}/unlisted onchain</p>
+              <a href={EXPLORER + result.hash} target="_blank" rel="noreferrer" className="block font-mono text-zinc-500 underline break-all">
+                {result.hash.slice(0, 20)}…
+              </a>
+            </>
+          ) : (
+            <p className="text-[var(--gr-dead)]">{result.error}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgentCard({
   name,
   category,
@@ -133,6 +253,9 @@ function AgentCard({
   trustScore,
   cap,
   metrics,
+  operator,
+  active,
+  identityId,
 }: {
   name: string;
   category: string;
@@ -144,6 +267,9 @@ function AgentCard({
   trustScore: number;
   cap: Listing["cap"];
   metrics: AgentMetrics["agents"] | undefined;
+  operator: `0x${string}`;
+  active: boolean;
+  identityId: number;
 }) {
   return (
     <article className="gr-card group flex h-full flex-col gap-4 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 shadow-[0_1px_2px_rgba(26,20,16,0.04)] transition hover:border-[rgba(194,37,92,0.35)] hover:shadow-[0_8px_30px_rgba(26,20,16,0.07)]">
@@ -158,14 +284,28 @@ function AgentCard({
         {wallet.slice(0, 10)}…{wallet.slice(-6)} · listing #{id}
       </p>
       <TrustBadge score={trustScore} />
+      {identityId > 0 && (
+        <a
+          href={SCAN}
+          target="_blank"
+          rel="noreferrer"
+          className="group/ident inline-flex w-fit items-center gap-1.5 font-mono text-[0.6875rem] text-[var(--gr-magenta)]"
+        >
+          ⬡ ERC-8004 identity #{identityId}
+          <span className="transition group-hover/ident:underline">· 8004scan ↗</span>
+        </a>
+      )}
       {allowlist.length > 0 && (
         <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">
           allowlist: {allowlist.map((a) => `${a.slice(0, 6)}…${a.slice(-4)}`).join(", ")}
         </p>
       )}
-      {capLabel(cap) && (
-        <p className="font-mono text-[0.6875rem] text-[var(--gr-live)]">{capLabel(cap)}</p>
-      )}
+      <div className="flex items-center justify-between gap-2">
+        {capLabel(cap) && (
+          <p className="font-mono text-[0.6875rem] text-[var(--gr-live)]">{capLabel(cap)}</p>
+        )}
+        <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">op: {operator.slice(0, 6)}…{operator.slice(-4)}</p>
+      </div>
       <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">free to list · scope enforced onchain</p>
       {renderMetrics(categoryIndex, metrics)}
       <div className="mt-auto flex flex-col gap-3 border-t border-[var(--gr-border)] pt-4">
@@ -173,6 +313,7 @@ function AgentCard({
           <HireButton provider={wallet} agentName={name} listingId={id} />
           <BuyReportButton kind={KIND_BY_CATEGORY[categoryIndex] ?? "health"} agentName={name} />
         </div>
+        <OperatorControls operator={operator} id={id} active={active} />
       </div>
     </article>
   );
@@ -244,6 +385,9 @@ export default function AgentsPage() {
           trustScore={l.trustScore}
           cap={l.cap}
           metrics={metrics}
+          operator={l.operator}
+          active={l.active}
+          identityId={l.category >= 0 && l.category <= 3 ? IDENTITY_BY_CATEGORY[l.category] as number : 0}
         />
       </Reveal>
     ));
@@ -307,6 +451,8 @@ export default function AgentsPage() {
           <p className="font-mono text-sm text-[var(--gr-ink-3)]">Loading listings…</p>
         )}
       </section>
+
+      <SafetyProof />
 
       <section className="mx-auto max-w-6xl px-6 pb-12">
         <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 sm:flex-row sm:items-center">

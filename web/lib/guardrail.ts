@@ -54,6 +54,23 @@ export const MARKETPLACE_ABI = [
     outputs: [{ type: "uint256" }],
   },
   {
+    name: "toggleActive",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "id", type: "uint256" },
+      { name: "active", type: "bool" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "unlist",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [],
+  },
+  {
     name: "listingSummary",
     type: "function",
     stateMutability: "view",

@@ -93,8 +93,9 @@ export async function GET() {
         /* ignore */
       }
 
-      // Full scope audit: cap + allowlist in one honest read.
+      // Full scope audit: cap + allowlist + liveness in one honest read.
       let cap: { token?: string; limit?: string; period?: number } = {};
+      let active = true;
       try {
         const sc = (await client.readContract({
           address: MARKETPLACE,
@@ -107,6 +108,8 @@ export async function GET() {
           cap.limit = sc[3].toString();
           cap.period = Number(sc[4]);
         }
+        active = sc[6];
+        live = sc[7];
       } catch {
         /* ignore */
       }
@@ -120,6 +123,7 @@ export async function GET() {
         operator,
         listedAt: Number(listedAt),
         live,
+        active,
         allowlist,
         trustScore,
         cap,
