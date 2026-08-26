@@ -21,7 +21,10 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-const OG = "https://hong-motivated-projectors-alien.trycloudflare.com";
+// Site origin for OG previews. Set GUARDRAIL_SITE_URL to the real public
+// domain in prod (Vercel/Render); falls back to Vercel's prod URL, then local.
+const _site = (process.env.GUARDRAIL_SITE_URL ?? process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "").trim();
+const OG = _site ? (_site.startsWith("http") ? _site : `https://${_site}`) : "http://localhost:3050";
 
 export const metadata: Metadata = {
   metadataBase: new URL(OG),
