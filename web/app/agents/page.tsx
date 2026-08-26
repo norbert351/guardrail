@@ -289,7 +289,7 @@ function AgentCard({
           href={SCAN}
           target="_blank"
           rel="noreferrer"
-          className="group/ident inline-flex w-fit items-center gap-1.5 font-mono text-[0.6875rem] text-[var(--gr-magenta)]"
+          className="group/ident inline-flex items-center gap-1.5 rounded-md px-1 -mx-1 py-2 -my-1.5 font-mono text-[0.6875rem] text-[var(--gr-magenta)]"
         >
           ⬡ ERC-8004 identity #{identityId}
           <span className="transition group-hover/ident:underline">· 8004scan ↗</span>
@@ -402,10 +402,10 @@ export default function AgentsPage() {
               <span className="font-display text-lg font-bold tracking-tight text-[var(--gr-ink)]">GuardRail</span>
             </Link>
             <div className="flex items-center gap-4">
-              <Link href="/" className="gr-link font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)]">
+              <Link href="/" className="gr-link hidden font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)] sm:block">
                 Home
               </Link>
-              <Link href="/list" className="rounded-lg bg-[var(--gr-magenta)] px-3 py-1.5 font-display text-sm font-semibold text-white transition hover:bg-[var(--gr-magenta-deep)]">
+              <Link href="/list" className="hidden rounded-lg bg-[var(--gr-magenta)] px-3 py-1.5 font-display text-sm font-semibold text-white transition hover:bg-[var(--gr-magenta-deep)] sm:block">
                 List agent
               </Link>
               <ConnectWallet />

@@ -162,13 +162,13 @@ export default function ListPage() {
               <span className="font-display text-lg font-bold tracking-tight text-[var(--gr-ink)]">GuardRail</span>
             </Link>
             <div className="flex items-center gap-4">
-              <Link href="/" className="gr-link font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)]">
+              <Link href="/" className="gr-link hidden font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)] sm:block">
                 Home
               </Link>
-              <Link href="/agents" className="gr-link font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)]">
+              <Link href="/agents" className="gr-link hidden font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)] sm:block">
                 Agents
               </Link>
-              <span className="rounded-full bg-[var(--gr-magenta-soft)] px-3 py-1 font-display text-sm font-semibold text-[var(--gr-magenta)]">
+              <span className="hidden rounded-full bg-[var(--gr-magenta-soft)] px-3 py-1 font-display text-sm font-semibold text-[var(--gr-magenta)] sm:inline-flex">
                 List agent
               </span>
               <ConnectWallet />
