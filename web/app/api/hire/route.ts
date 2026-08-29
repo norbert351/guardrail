@@ -45,14 +45,15 @@ export async function POST(req: Request) {
   const requestedListing = body.listingId && Number.isInteger(body.listingId) ? body.listingId : undefined;
 
   const TESTNET = {
-    chainId: 97,
-    rpc: "https://bsc-testnet-rpc.publicnode.com",
-    marketplace: "0x0e111C58E488fE3647F0b45011Ba7334d163E566" as Address,
+    chainId: 56,
+    rpc: "https://bsc-dataseed.bnbchain.org",
+    explorer: "https://bscscan.com",
+    marketplace: "0xb7c80f5154952E48f6E1548282343000c45b80d6" as Address,
     router: "0xD7d36D66d2F1B608A0F943f722D27e3744f66F25" as Address,
     policy: "0x4F4678D4439feC812Ac7674Bb3Efb4C8f5Fb78A6" as Address,
   };
 
-  const chain = { id: TESTNET.chainId, name: "BSC Testnet" } as Chain;
+  const chain = { id: TESTNET.chainId, name: "BNB Smart Chain" } as Chain;
   const pubClient = createPublicClient({ chain, transport: http(TESTNET.rpc, { timeout: 15_000 }) });
 
   // Signer: the GuardRail admin wallet (same wallet that owns the listings).

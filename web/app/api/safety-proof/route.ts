@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, parseEther } from "viem";
-import { bscTestnet } from "viem/chains";
+import { bsc } from "viem/chains";
 import { MARKETPLACE } from "@/lib/guardrail";
 
 export const dynamic = "force-dynamic";
@@ -69,8 +69,8 @@ export async function GET(req: Request) {
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
 
   const client = createPublicClient({
-    chain: bscTestnet,
-    transport: http(process.env.BNB_RPC_URL ?? "https://bsc-testnet-rpc.publicnode.com"),
+    chain: bsc,
+    transport: http(process.env.BNB_RPC_URL ?? "https://bsc-dataseed.bnbchain.org"),
   });
 
   try {

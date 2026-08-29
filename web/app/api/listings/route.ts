@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { bscTestnet } from "viem/chains";
+import { bsc } from "viem/chains";
 import {
   MARKETPLACE,
   MARKETPLACE_ABI,
@@ -16,8 +16,8 @@ export const dynamic = "force-dynamic";
 // This is still onchain truth — same contract, same RPC, just read in Node.
 export async function GET() {
   const client = createPublicClient({
-    chain: bscTestnet,
-    transport: http(process.env.BNB_RPC_URL ?? "https://bsc-testnet-rpc.publicnode.com"),
+    chain: bsc,
+    transport: http(process.env.BNB_RPC_URL ?? "https://bsc-dataseed.bnbchain.org"),
   });
 
   try {

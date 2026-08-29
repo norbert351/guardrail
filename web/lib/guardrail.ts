@@ -1,16 +1,16 @@
-// Onchain addresses for GuardRail on BSC testnet (chain 97).
-// The marketplace contract is deployed after the live demo run; until then
-// the page falls back to showing the verified-onchain flow with the real
-// Altana KeyStore and the demo wallet.
-
-export const CHAIN_ID = 97;
+// Onchain addresses for GuardRail on BSC MAINNET (chain 56 / v2 marketplace).
+// Overridable via env (GUARDRAIL_CHAIN_ID / KEYSTORE / MARKETPLACE) but the
+// defaults are the deployed mainnet v2 stack the submission targets.
+export const CHAIN_ID = Number(process.env.GUARDRAIL_CHAIN_ID ?? 56);
 
 export const ALTANA_KEYSTORE =
-  "0x6b8361C29d05D498b1a12B54A37310f94171E94A" as `0x${string}`;
+  (process.env.GUARDRAIL_KEYSTORE ??
+    "0x6572427ED530BadcF7375Cf9A4709D8d2b0E7E0a") as `0x${string}`;
 
-// GuardRailMarketplace deployment on BSC testnet (chain 97).
+// GuardRailMarketplace v2 deployment on BSC mainnet (chain 56).
 export const MARKETPLACE =
-  "0x0e111C58E488fE3647F0b45011Ba7334d163E566" as `0x${string}`;
+  (process.env.GUARDRAIL_MARKETPLACE ??
+    "0xb7c80f5154952E48f6E1548282343000c45b80d6") as `0x${string}`;
 
 // The live demo agent wallet (from the GuardRail demo run).
 export const DEMO_AGENT_WALLET =

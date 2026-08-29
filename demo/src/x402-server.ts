@@ -31,10 +31,22 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { U_TOKEN, createX402Merchant } from "@altananetwork/x402-server";
-import { BNB_TESTNET } from "@altananetwork/sdk";
+import { BNB, BNB_TESTNET } from "@altananetwork/sdk";
 
 const WALLET = "0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97" as `0x${string}`;
 const PRICE_U = parseEther("0.1"); // 0.1 $U per report
+
+// Chain selection: default MAINNET (the submission target). Set
+// GUARDRAIL_NETWORK=testnet to run the testnet dev/demo stack.
+const IS_TESTNET = process.env.GUARDRAIL_NETWORK === "testnet";
+const NET = IS_TESTNET ? BNB_TESTNET : BNB;
+const U_TOKEN_ADDR =
+  // U_TOKEN[N] is a TokenConfig object — pass it straight to the rail (do NOT
+  // cast to a bare `0x${string}`: that TS2322 errors).
+  IS_TESTNET ? (U_TOKEN[97] as never) : (U_TOKEN[56] as never);
+const RPC =
+  process.env.BNB_RPC_URL ??
+  (IS_TESTNET ? BNB_TESTNET.publicRpcUrl : "https://bsc-dataseed.bnbchain.org");
 
 function loadAdminKey(): `0x${string}` {
   // Prefer an injected secret (Render env var / secret file); fall back to
@@ -53,17 +65,17 @@ function loadAdminKey(): `0x${string}` {
 // offering it would always revert at settlement. Keep the merchant honest:
 // one rail per chain, the one that works.
 const merchant = createX402Merchant({
-  chainId: BNB_TESTNET.chainId,
+  chainId: NET.chainId,
   payTo: WALLET,
   price: PRICE_U,
   minPrice: parseEther("0.01"),
   maxPrice: parseEther("1"),
-  rails: [{ rail: "eip3009", token: U_TOKEN[97] }],
+  rails: [{ rail: "eip3009", token: U_TOKEN_ADDR }],
   description: "GuardRail agent capability report (health / yield / LP / grid)",
   resource: { url: "https://guardrail.local/v1/agents", mimeType: "application/json" },
   facilitator: privateKeyToAccount(loadAdminKey()),
-  rpcUrl: BNB_TESTNET.publicRpcUrl,
-  chain: BNB_TESTNET.chain,
+  rpcUrl: RPC,
+  chain: IS_TESTNET ? BNB_TESTNET.chain : BNB.chain,
 });
 
 const PORT = Number(process.argv.find((a) => a.startsWith("--port"))?.split("=")[1] ?? 8787);
