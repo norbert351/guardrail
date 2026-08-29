@@ -122,6 +122,34 @@ export const MARKETPLACE_ABI = [
       { name: "live", type: "bool" },
     ],
   },
+{
+    name: "stats",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [
+      { name: "hires", type: "uint32" },
+      { name: "ratingSum", type: "uint256" },
+      { name: "ratingCount", type: "uint32" },
+    ],
+  },
+  {
+    name: "recordHire",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    name: "rate",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "id", type: "uint256" },
+      { name: "score", type: "uint8" },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 export const KEYSTORE_ABI = [

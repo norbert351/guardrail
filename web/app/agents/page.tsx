@@ -7,6 +7,7 @@ import { ALTANA_KEYSTORE, MARKETPLACE, MARKETPLACE_ABI } from "@/lib/guardrail";
 import { capLabel, clampScore, trustScoreLabel, type ScopeCap } from "@/lib/format";
 import { HireButton } from "@/components/HireButton";
 import { BuyReportButton } from "@/components/BuyReportButton";
+import { RateButton } from "@/components/RateButton";
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { Reveal } from "@/components/Reveal";
 import { Logomark } from "@/components/Logomark";
@@ -128,7 +129,7 @@ function TrustBadge({ score }: { score: number }) {
   );
 }
 
-const EXPLORER = "https://testnet.bscscan.com/tx/";
+const EXPLORER = "https://bscscan.com/tx/";
 
 type OpResult = { hash?: string; error?: string };
 
@@ -256,6 +257,9 @@ function AgentCard({
   operator,
   active,
   identityId,
+  hires,
+  ratingCount,
+  avgRating,
 }: {
   name: string;
   category: string;
@@ -270,6 +274,9 @@ function AgentCard({
   operator: `0x${string}`;
   active: boolean;
   identityId: number;
+  hires?: number;
+  ratingCount?: number;
+  avgRating?: number;
 }) {
   return (
     <article className="gr-card group flex h-full flex-col gap-4 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 shadow-[0_1px_2px_rgba(26,20,16,0.04)] transition hover:border-[rgba(194,37,92,0.35)] hover:shadow-[0_8px_30px_rgba(26,20,16,0.07)]">
@@ -284,6 +291,13 @@ function AgentCard({
         {wallet.slice(0, 10)}…{wallet.slice(-6)} · listing #{id}
       </p>
       <TrustBadge score={trustScore} />
+      {(hires !== undefined || ratingCount !== undefined) && (
+        <div className="flex items-center gap-2 font-mono text-[0.6875rem] text-[var(--gr-ink-2)]">
+          <span className="rounded-md bg-[var(--gr-mono-chip)] px-2 py-0.5">{hires ?? 0} hired</span>
+          <span className="rounded-md bg-[var(--gr-mono-chip)] px-2 py-0.5">{ratingCount ?? 0} rated</span>
+          {avgRating ? <span className="text-[var(--gr-magenta)]">★ {avgRating.toFixed(1)}/5</span> : null}
+        </div>
+      )}
       {identityId > 0 && (
         <a
           href={SCAN}
@@ -313,6 +327,7 @@ function AgentCard({
           <HireButton provider={wallet} agentName={name} listingId={id} />
           <BuyReportButton kind={KIND_BY_CATEGORY[categoryIndex] ?? "health"} agentName={name} />
         </div>
+        <RateButton listingId={id} agentName={name} />
         <OperatorControls operator={operator} id={id} active={active} />
       </div>
     </article>
@@ -323,6 +338,10 @@ export default function AgentsPage() {
   const [data, setData] = useState<{ listingCount: number; listings: Listing[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<AgentMetrics["agents"] | undefined>(undefined);
+  const [stats, setStats] = useState<Record<number, { hires: number; ratingCount: number; avgRating: number }>>({});
+  const [activity, setActivity] = useState<{ kind: string; id: number; agentName: string; detail: string; ts: number; link: string }[]>([]);
+  const [cat, setCat] = useState<number>(-1);
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -338,6 +357,50 @@ export default function AgentsPage() {
     };
     load();
     const t = setInterval(load, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
+
+  // Per-listing onchain stats (hires / ratings) — drives trustScore movement.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/stats");
+        if (!res.ok) return;
+        const j = (await res.json()) as { listings?: { id: number; hires: number; ratingCount: number; avgRating: number }[] };
+        const m: Record<number, { hires: number; ratingCount: number; avgRating: number }> = {};
+        for (const l of j.listings ?? []) m[l.id] = { hires: l.hires, ratingCount: l.ratingCount, avgRating: l.avgRating };
+        if (!cancelled) setStats(m);
+      } catch {
+        /* best-effort */
+      }
+    };
+    load();
+    const t = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
+
+  // Live onchain activity feed.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/activity");
+        if (!res.ok) return;
+        const j = (await res.json()) as { feed?: { kind: string; id: number; agentName: string; detail: string; ts: number; link: string }[] };
+        if (!cancelled) setActivity(j.feed ?? []);
+      } catch {
+        /* best-effort */
+      }
+    };
+    load();
+    const t = setInterval(load, 45_000);
     return () => {
       cancelled = true;
       clearInterval(t);
@@ -370,8 +433,13 @@ export default function AgentsPage() {
 
   const listings = data?.listings ?? [];
   const live = listings.filter((l) => l.live).length;
-  const cards = listings
-    .filter((l) => l.category >= 0 && l.category <= 3)
+  const filtered = listings.filter((l) => {
+    if (l.category < 0 || l.category > 3) return false;
+    if (cat >= 0 && l.category !== cat) return false;
+    if (q && !l.name.toLowerCase().includes(q.toLowerCase())) return false;
+    return true;
+  });
+  const cards = filtered
     .map((l, idx) => (
       <Reveal key={l.id} delay={(idx % 6) * 80} className="h-full">
         <AgentCard
@@ -388,6 +456,9 @@ export default function AgentsPage() {
           operator={l.operator}
           active={l.active}
           identityId={l.category >= 0 && l.category <= 3 ? IDENTITY_BY_CATEGORY[l.category] as number : 0}
+          hires={stats[l.id]?.hires}
+          ratingCount={stats[l.id]?.ratingCount}
+          avgRating={stats[l.id]?.avgRating}
         />
       </Reveal>
     ));
@@ -413,7 +484,7 @@ export default function AgentsPage() {
           </nav>
           <div className="mt-10 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="eyebrow">Live agents on BSC testnet</p>
+              <p className="eyebrow">Live agents on BSC mainnet</p>
               <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-[var(--gr-ink)] sm:text-4xl">
                 {data ? `${listings.length} listing(s) · ${live} live` : "Loading…"}
               </h1>
@@ -443,6 +514,35 @@ export default function AgentsPage() {
       </header>
 
       <section className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setCat(-1)}
+              className={`rounded-full px-3 py-1.5 font-mono text-xs font-medium transition ${cat < 0 ? "bg-[var(--gr-magenta)] text-white" : "bg-[var(--gr-mono-chip)] text-[var(--gr-ink-2)] hover:text-[var(--gr-magenta)]"}`}
+            >
+              All
+            </button>
+            {CATEGORY_NAMES.map((name, i) => (
+              <button
+                key={name}
+                onClick={() => setCat(cat === i ? -1 : i)}
+                className={`rounded-full px-3 py-1.5 font-mono text-xs font-medium transition ${cat === i ? "bg-[var(--gr-magenta)] text-white" : "bg-[var(--gr-mono-chip)] text-[var(--gr-ink-2)] hover:text-[var(--gr-magenta)]"}`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          <div className="relative sm:w-64">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center font-mono text-xs text-[var(--gr-ink-3)]">⌕</span>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setQ("")}
+              placeholder="Search agents…"
+              className="w-full rounded-lg border border-[var(--gr-border)] bg-[var(--gr-surface)] py-2 pl-8 pr-3 font-mono text-xs text-[var(--gr-ink)] outline-none placeholder:text-[var(--gr-ink-3)] focus:border-[var(--gr-magenta)]"
+            />
+          </div>
+        </div>
         {error ? (
           <p className="font-mono text-sm text-[var(--gr-dead)]">Failed to read marketplace: {error}</p>
         ) : cards.length > 0 ? (
@@ -453,6 +553,55 @@ export default function AgentsPage() {
       </section>
 
       <SafetyProof />
+
+      <section className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="eyebrow">Live onchain activity</h2>
+            <p className="mt-1 text-sm text-[var(--gr-ink-2)]">Real events from the marketplace on BSC mainnet — listed, hired, rated. Every row links to the tx.</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gr-live-soft)] px-2.5 py-0.5 font-mono text-[0.6875rem] font-medium text-[var(--gr-live)]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--gr-live)]" />
+            live
+          </span>
+        </div>
+        {activity.length === 0 ? (
+          <p className="rounded-xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 font-mono text-xs text-[var(--gr-ink-3)]">Watching for onchain events…</p>
+        ) : (
+          <ol className="divide-y divide-[var(--gr-border)] overflow-hidden rounded-xl border border-[var(--gr-border)] bg-[var(--gr-surface)]">
+            {activity.slice(0, 14).map((a, i) => (
+              <li key={`${a.link}-${i}`} className="flex items-center gap-3 px-4 py-2.5">
+                <span
+                  className={`inline-flex w-16 shrink-0 justify-center rounded-md px-1.5 py-0.5 font-mono text-[0.625rem] font-semibold uppercase ${
+                    a.kind === "listed"
+                      ? "bg-[var(--gr-live-soft)] text-[var(--gr-live)]"
+                      : a.kind === "hired"
+                        ? "bg-[var(--gr-magenta)]/10 text-[var(--gr-magenta)]"
+                        : a.kind === "rated"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-zinc-100 text-zinc-500"
+                  }`}
+                >
+                  {a.kind}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-[var(--gr-ink)]">
+                    <span className="font-semibold">{a.agentName}</span> <span className="text-[var(--gr-ink-2)]">{a.detail}</span>
+                  </p>
+                  <p className="font-mono text-[0.625rem] text-[var(--gr-ink-3)]">
+                    {a.ts ? new Date(a.ts).toLocaleString() : "recent"} · {a.id > 0 ? `#${a.id}` : ""}
+                  </p>
+                </div>
+                {a.link && (
+                  <a href={a.link} target="_blank" rel="noreferrer" className="shrink-0 font-mono text-[0.6875rem] text-[var(--gr-magenta)] hover:underline">
+                    {a.link.slice(a.link.length - 10)} ↗
+                  </a>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-12">
         <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 sm:flex-row sm:items-center">
@@ -478,7 +627,7 @@ export default function AgentsPage() {
             <span className="font-display text-sm font-bold text-[var(--gr-ink)]">GuardRail</span>
           </div>
           <p className="font-mono text-xs text-[var(--gr-ink-3)]">
-            BNB Smart Money Era · BSC testnet · github.com/norbert351/guardrail
+            BNB Smart Money Era · BSC mainnet · github.com/norbert351/guardrail
           </p>
         </div>
       </footer>
