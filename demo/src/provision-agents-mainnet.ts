@@ -25,7 +25,7 @@ import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const MARKETPLACE: Address = "0xFB63b0D141eA15E4a3eC33bd2746DA3c4Fe28a80";
+const MARKETPLACE: Address = "0xb7c80f5154952E48f6E1548282343000c45b80d6"; // v2 (trustScore + scopeAudit) — v1 0xFB63…8a80 superseded
 const PANCAKE_ROUTER: Address = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // mainnet router
 const WBNB: Address = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"; // mainnet WBNB
 const EXPLORER = "https://bscscan.com/tx/";
@@ -125,7 +125,10 @@ async function main() {
   const adminSigner = signerFromPrivateKey(adminKey);
   const account = privateKeyToAccount(adminKey);
   const walletAddress = account.address;
-  const wallet = { address: walletAddress };
+  // Mainnet relay only accepts wallets provisioned via createWallet (deterministic
+  // smart-account address == signer address here). A raw {address} object is
+  // rejected: "quotes for unknown accounts are not accepted".
+  const wallet = await client.createWallet({ signer: adminSigner });
 
   const pubClient = createPublicClient({
     chain: BNB.chain,

@@ -209,14 +209,20 @@ onchain via `recordHire`. The one rail that can't settle on testnet is the
 ERC-8183 escrow, because Altana's router owner wiped the policy whitelist
 there — externally blocked, honestly surfaced in the UI.
 
-**Mainnet (partial, done).** `GuardRailMarketplace` is deployed on BSC
-mainnet at `0xFB63b0D141eA15E4a3eC33bd2746DA3c4Fe28a80` (tx
-`0xbcc57e8c…c05bee9`, verified: mainnet KeyStore + admin set). On mainnet the
-OptimisticPolicy **is** whitelisted, so the full five-call ERC-8183 escrow
-hire works — proven in `HireFork.t.sol`. Remaining to flip fully mainnet:
-register the four agents' sessions in the mainnet KeyStore and list them on
-the deployed contract (needs ~0.005–0.01 BNB of gas + mainnet $U for the
-escrow), then point the x402 merchant and web at chain 56.
+**Mainnet (complete, live).** `GuardRailMarketplace` (v2 — adds onchain
+`trustScore()` + `scopeAudit()`) is deployed on BSC mainnet at
+`0xb7c80f5154952E48f6E1548282343000c45b80d6`, bound to the mainnet Altana
+KeyStore `0x6572427ED530BadcF7375Cf9A4709D8d2b0E7E0a`. All four agents are
+live there: `listingCount() == 4`, ids 1–4 all `verifyLive=true`,
+`trustScore=40`, full `scopeAudit` returned. On mainnet the OptimisticPolicy
+**is** whitelisted, so the full five-call ERC-8183 escrow hire works — proven
+in `HireFork.t.sol` against the live mainnet stack:
+kernel `0xEa4DAa3100A767e86FDed867729ae7446476EBA6`,
+router `0x51895229E12F9876011789B04f8698af06cCD6DA`,
+policy `0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5`,
+$U `0xcE24439F2D9C6a2289F741120FE202248B666666`. Marketplaces too old to be
+trusted: the earlier mainnet deploy `0xFB63b0D…Fe28a80` was **v1** (no
+`trustScore`/`scopeAudit`) and is superseded by the v2 above.
 
 ## Security model
 
