@@ -13,7 +13,7 @@ import { Logomark } from "@/components/Logomark";
  */
 
 type Stats = { listings?: { id: number; hires: number; ratingCount: number; avgRating: number }[]; settledU?: string };
-type Activity = { kind: string; detail: string; ts: number }[];
+type Activity = { kind: string; detail: string; ts: number; block?: string; link?: string }[];
 
 const CAP = 0.02; // BNB/day — the GuardRail-enforced spend cap from the scope
 const FEE = 0.1; // $U per x402 report
@@ -47,6 +47,11 @@ export default function TermixReportPage() {
   const settledU = stats?.settledU ? Number(stats.settledU) : null;
   const reports = settledU !== null ? Math.floor(settledU / FEE) : null;
 
+  // Real onchain task-execution evidence (from /api/activity): actual tx
+  // hashes + block numbers so every number in this report is BscScan-provable.
+  const evidence = activity.filter((a) => ["paid", "agent-act", "listed"].includes(a.kind));
+  const paidCnt = activity.filter((a) => a.kind === "paid").length;
+
   // Unmanaged risk (without a scoped session): an agent key or bot that holds
   // the wallet can drain everything. GuardRail caps native spend at CAP/day and
   // allowlists only PancakeRouter + WBNB.
@@ -56,9 +61,15 @@ export default function TermixReportPage() {
     {
       n: 1,
       name: "Monetise agent output (paid report sale)",
-      managed: settledU !== null ? `${formatU(settledU)} $U settled onchain · ${reports ?? 0}× 0.1 $U reports` : "watching…",
+      managed:
+        settledU !== null
+          ? `${formatU(settledU)} $U settled onchain · ${reports ?? 0}× 0.1 $U report${
+              reports === 1 ? "" : "s"
+            } (${paidCnt > 0 ? `${paidCnt} real paid tx` : "watching…"})`
+          : "watching…",
       unmanaged: "0 verifiable receipts — no onchain proof any report was paid for",
       advantage: settledU !== null ? `+${formatU(settledU)} $U of provable, onchain-settled revenue (EIP-3009, chain 56)` : "onchain-settled revenue, verifiable by anyone",
+      live: paidCnt > 0 ? `${paidCnt} paid report tx settled onchain` : undefined,
     },
     {
       n: 2,
@@ -152,6 +163,40 @@ export default function TermixReportPage() {
             </article>
           ))}
         </div>
+
+        {evidence.length > 0 ? (
+          <div className="mt-8 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6">
+            <h2 className="font-display text-lg font-semibold text-[var(--gr-ink)]">Real onchain evidence</h2>
+            <p className="mt-1 text-sm text-[var(--gr-ink-2)]">
+              Every task number above traces to a broadcast mainnet transaction on BSC (chain 56). Tap any hash to view it on BscScan.
+            </p>
+            <ul className="mt-4 space-y-2">
+              {evidence.map((e, i) => (
+                <li key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-[var(--gr-border)] bg-[var(--gr-bg)] px-4 py-2.5 text-sm">
+                  <span className={`rounded px-2 py-0.5 font-mono text-[0.6875rem] font-semibold uppercase ${
+                    e.kind === "paid"
+                      ? "bg-[var(--gr-live-soft)] text-[var(--gr-live)]"
+                      : e.kind === "agent-act"
+                        ? "bg-[var(--gr-live-soft)] text-[var(--gr-live)]"
+                        : "bg-[var(--gr-ink-3)]/10 text-[var(--gr-ink-2)]"
+                  }`}>{e.kind}</span>
+                  <span className="min-w-0 flex-1 truncate text-[var(--gr-ink-2)]">{e.detail}</span>
+                  {e.link ? (
+                    <a
+                      href={e.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-xs font-semibold text-[var(--gr-magenta)] underline underline-offset-2"
+                    >
+                      tx 0x{e.link.split("/").pop()?.slice(0, 10)}… ↗
+                    </a>
+                  ) : null}
+                  {e.block ? <span className="font-mono text-xs text-[var(--gr-ink-3)]">block {e.block}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <p className="mt-8 font-mono text-xs text-[var(--gr-ink-3)]">
           Methodology: revenue + hires read live onchain (chain 56); spend cap from the scopeAudit of listing #1; APR from Venus vUSDT

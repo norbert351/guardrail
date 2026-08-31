@@ -21,9 +21,16 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-// Site origin for OG previews. Set GUARDRAIL_SITE_URL to the real public
-// domain in prod (Vercel/Render); falls back to Vercel's prod URL, then local.
-const _site = (process.env.GUARDRAIL_SITE_URL ?? process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "").trim();
+// Site origin for OG previews. Prefer the DEPLOYED host: on Vercel that's
+// VERCEL_PROJECT_PRODUCTION_URL (the marketplace itself, e.g.
+// guardrail-delta.vercel.app). GUARDRAIL_SITE_URL is only used for a custom
+// domain; NEVER let it point at the merchant/API host (og:url must be the
+// marketplace UI, not the x402 backend).
+const _site = (
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+  process.env.GUARDRAIL_SITE_URL ??
+  ""
+).trim();
 const OG = _site ? (_site.startsWith("http") ? _site : `https://${_site}`) : "http://localhost:3050";
 
 export const metadata: Metadata = {
