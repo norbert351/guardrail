@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createPublicClient, http, parseEther } from "viem";
 import { bsc } from "viem/chains";
 import { MARKETPLACE } from "@/lib/guardrail";
+import { guardWithMemory } from "@/lib/continuum";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,16 @@ export async function GET(req: Request) {
       reason = "Within scope — allowlisted target and inside the spend cap";
     }
 
+    // GuardRail recall-then-rule: if Continuum remembers a prior GuardRail
+    // denial for this exact scenario+wallet, re-apply it instead of re-deriving.
+    const judged = await guardWithMemory({
+      scenario: scenario.id,
+      target: scenario.target,
+      agentWallet,
+      allowed,
+      reason,
+    });
+
     return NextResponse.json({
       listingId,
       scenario: scenario.id,
@@ -111,8 +122,9 @@ export async function GET(req: Request) {
       hint: scenario.hint,
       target: scenario.target,
       valueBnb: scenario.valueBnb,
-      allowed,
-      reason,
+      allowed: judged.verdict.allowed,
+      reason: judged.verdict.reason,
+      fromMemory: judged.fromMemory,
       sessionLive: live,
       listingActive: active,
       capLimitBnb: nativeCap ? Number(capLimit) / 1e18 : null,
