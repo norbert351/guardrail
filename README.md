@@ -7,8 +7,12 @@ to live and revocable Altana session keys, safely execute on BSC, and can be
 hired and paid onchain — with the honest property that malicious or
 over-scoped actions are blocked by the session itself.
 
-Built for the BNB Chain **Smart Money Era** hackathon. Everything below is
-live on BSC testnet (chain 97) and independently verifiable onchain.
+Built for the BNB Chain **Smart Money Era** hackathon. **LIVE ON BSC MAINNET
+(chain 56)** — v2 marketplace `0xb7c80f5154952E48f6E1548282343000c45b80d6`,
+all four agents across the four required categories report `verifyLive = true`
+(verified 2026-09-01). Every claim here is independently verifiable onchain.
+The Bankr-replay attack demo is re-run on testnet (below); the live product is
+mainnet.
 
 ---
 
@@ -58,11 +62,17 @@ simply isn't there. GuardRail makes agents *containable*, not trustworthy.
 
 ## What's live onchain
 
-| Component | Address / Id | Detail |
+**Mainnet (BSC chain 56) — the product:**
+
+| Component | Address | Detail |
 |---|---|---|
-| GuardRailMarketplace | `0x0e111C58E488fE3647F0b45011Ba7334d163E566` | listing registry, 4 live listings, `verifyLive()` reads the KeyStore, onchain `trustScore()` + `scopeAudit()` |
-| Altana KeyStore | `0x6b8361C29d05D498b1a12B54A37310f94171E94A` | session keys live here; anyone can verify |
-| Agent wallet | `0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97` | self-custodial, owns all session grants |
+| GuardRailMarketplace v2 | `0xb7c80f5154952E48f6E1548282343000c45b80d6` | listing registry, **4 live listings — all `verifyLive = true`**; `verifyLive()` reads the real Altana KeyStore, onchain `trustScore()` + `scopeAudit()` |
+| Agent wallet | `0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97` | self-custodial Altana smart account, owns every session grant |
+
+**Testnet (chain 97) — safety-demo replay only:** marketplace
+`0x0e111C58E488fE3647F0b45011Ba7334d163E566`, Altana KeyStore
+`0x6b8361C29d05D498b1a12B54A37310f94171E94A`. The Bankr-replay attack is
+re-run here; the product the judges interact with is **mainnet**.
 
 ### The four agents (one per required category)
 
@@ -74,8 +84,10 @@ simply isn't there. GuardRail makes agents *containable*, not trustworthy.
 | GuardRail Health Guard | Health Factor Monitoring | 1793 | Reads the real Venus vUSDT market, computes health, protective action when critical |
 
 Every agent holds **its own session private key** and transacts through it.
-The sessions are capped at 0.02 tBNB/day with an allowlist of exactly
-`PancakeSwapRouter + WBNB`.
+On mainnet, `scopeAudit(id)` verifiably returns (read 2026-09-01, id 1):
+allowlist `[PancakeSwap V2 Router 0x10ED43C7…, WBNB 0xbb4CdB9C…]`, spend cap
+`0.02 BNB/day` (period 86400s), liveness `true` — so each agent is live on
+BSC mainnet and scoped to exactly the PancakeSwap router + WBNB, nothing else.
 
 ## The safety demo (attack blocked onchain)
 
@@ -94,7 +106,7 @@ live transaction history.
 
 ## Trust & scope, onchain
 
-Every listing exposes two honest reads (deployed `0x0e111C58…E566`):
+Every listing exposes two honest reads (mainnet v2 `0xb7c80f…`):
 
 - `scopeAudit(id)` — one call returning the agent's allowlist, spend cap
   (token, limit, period) and current liveness from the real KeyStore.
