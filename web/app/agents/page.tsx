@@ -476,6 +476,9 @@ export default function AgentsPage() {
               <Link href="/" className="gr-link hidden font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)] sm:block">
                 Home
               </Link>
+              <Link href="/proof" className="gr-link hidden font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)] sm:block">
+                /proof
+              </Link>
               <Link href="/list" className="hidden rounded-lg bg-[var(--gr-magenta)] px-3 py-1.5 font-display text-sm font-semibold text-white transition hover:bg-[var(--gr-magenta-deep)] sm:block">
                 List agent
               </Link>

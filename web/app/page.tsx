@@ -286,6 +286,31 @@ export default function Home() {
         </Reveal>
       </section>
 
+      {/* ================= PROOF BAND ================= */}
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <Reveal>
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--gr-border)] bg-[linear-gradient(135deg,rgba(194,37,92,0.08),transparent)] p-6">
+            <div>
+              <p className="eyebrow">Don&apos;t take our word</p>
+              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-[var(--gr-ink)]">
+                Every claim re-read straight from chain
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-[var(--gr-ink-2)]">
+                A judge needs no wallet and no tooling. The <span className="font-mono text-[0.6875rem]">/proof</span> page
+                re-derives each listing&apos;s liveness from the Altana KeyStore <em>and</em> the marketplace scope at a
+                captured block, and reports honest verdicts — never a guess.
+              </p>
+            </div>
+            <Link
+              href="/proof"
+              className="rounded-xl bg-[var(--gr-magenta)] px-6 py-3 font-display text-sm font-semibold text-white shadow-[0_8px_30px_rgba(194,37,92,0.35)] transition hover:bg-[var(--gr-magenta-deep)]"
+            >
+              Recompute onchain facts →
+            </Link>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ================= FOOTER ================= */}
       <footer className="border-t border-[var(--gr-border)] bg-[var(--gr-surface)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8">
@@ -294,10 +319,13 @@ export default function Home() {
             <span className="font-display text-sm font-bold text-[var(--gr-ink)]">GuardRail</span>
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/proof" className="gr-link font-mono text-xs text-[var(--gr-ink-3)] transition hover:text-[var(--gr-magenta)]">
+              /proof (recompute onchain)
+            </Link>
             <Link href="/agents" className="gr-link font-mono text-xs text-[var(--gr-ink-3)] transition hover:text-[var(--gr-magenta)]">
               Live agents →
             </Link>
-            <p className="font-mono text-xs text-[var(--gr-ink-3)]">BNB Smart Money Era · BSC testnet</p>
+            <p className="font-mono text-xs text-[var(--gr-ink-3)]">BNB Smart Money Era · BSC mainnet</p>
           </div>
         </div>
       </footer>
