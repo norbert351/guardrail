@@ -28,7 +28,7 @@ services:
         # The merchant runs as a SEPARATE Render service, so 127.0.0.1 inside
         # the web container can never reach it. Use the merchant service's
         # own URL (internal is fine; it resolves across services on Render).
-        value: ${GUARDRAIL_MERCHANT_URL:-https://guardrail-merchant.onrender.com}
+        value: ${GUARDRAIL_MERCHANT_URL:-https://guardrail-ohky.onrender.com}
         sync: false
       - key: GUARDRAIL_DEMO_DIR
         value: ../demo

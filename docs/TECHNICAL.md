@@ -274,7 +274,7 @@ Render free-tier services idle after ~15 minutes and a **suspended** service
 needs dashboard re-activation (not a retry). The keep-alive watchdog for this
 project is `~/.hermes/scripts/guardrail_keepalive.sh`, wired as a `no_agent`
 cron (`45653f11929f`, every 10m) that pings the **live** hosts
-(`guardrail-nxzi.onrender.com/healthz` + `guardrail-delta.vercel.app`) and stays
+(`guardrail-ohky.onrender.com/healthz` + `guardrail-delta.vercel.app`) and stays
 silent on success. It explicitly detects Render's "Service Suspended" page and
 reports it — a suspended merchant leaves every Buy button dead, so it must
 alert rather than read as warm.
@@ -287,7 +287,7 @@ alert rather than read as warm.
 Operational checks before a judging window:
 
 ```bash
-curl -s -m 55 https://guardrail-nxzi.onrender.com/healthz   # {"ok":true,...}
+curl -s -m 55 https://guardrail-ohky.onrender.com/healthz   # {"ok":true,...}
 curl -s -m 25 https://guardrail-delta.vercel.app/api/x402/health | head -c 200
 bash ~/.hermes/scripts/guardrail_keepalive.sh               # silent = healthy
 ```

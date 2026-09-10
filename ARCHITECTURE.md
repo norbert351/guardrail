@@ -4,7 +4,7 @@ How GuardRail actually works, and why the Altana scoped-session layer is the
 spine (remove it and there is no product, not a degraded one).
 
 - **Live product (BSC mainnet, chain 56):** <https://guardrail-delta.vercel.app>
-- **Live x402 merchant (BSC mainnet):** `https://guardrail-nxzi.onrender.com`
+- **Live x402 merchant (BSC mainnet):** `https://guardrail-ohky.onrender.com`
   (API host — see the "Marketplace URL vs merchant URL" note below)
 - **Marketplace contract (v2):** `0xb7c80f5154952E48f6E1548282343000c45b80d6`
 - **Altana KeyStore (mainnet):** `0x6572427ED530BadcF7375Cf9A4709D8d2b0E7E0a`
@@ -147,7 +147,7 @@ and every onchain execute is resolved through the session.
 | Layer | Host | Notes |
 |---|---|---|
 | Marketplace UI + API routes | **Vercel** (`guardrail-delta.vercel.app`), rootDir `web` | Next.js 16. Env: `GUARDRAIL_MERCHANT_URL`, `GUARDRAIL_ADMIN_KEY`, optional `BNB_RPC_URL`. OG origin self-resolves via `VERCEL_PROJECT_PRODUCTION_URL`. |
-| x402 merchant + agent supervisor | **Render** (`guardrail-nxzi.onrender.com`), rootDir `demo` | A persistent port-binding server that signs settlements — it cannot run on Vercel serverless. Env: `GUARDRAIL_ADMIN_KEY`, `GUARDRAIL_AGENT_KEYS` (JSON of the **mainnet** key file), `GUARDRAIL_NETWORK=mainnet`, `BNB_RPC_URL`. Free tier idles; keep-alive cron required. |
+| x402 merchant + agent supervisor | **Render** (`guardrail-ohky.onrender.com`), rootDir `demo` | A persistent port-binding server that signs settlements — it cannot run on Vercel serverless. Env: `GUARDRAIL_ADMIN_KEY`, `GUARDRAIL_AGENT_KEYS` (JSON of the **mainnet** key file), `GUARDRAIL_NETWORK=mainnet`, `BNB_RPC_URL`. Free tier idles; keep-alive cron required. |
 | Contracts | BSC mainnet (chain 56) | Deployed via Foundry script. |
 | Chain reads | `https://bsc-dataseed.bnbchain.org` | Note: BSC public RPCs block `eth_getLogs`, so the activity feed derives from recorded tx hashes via `getTransaction` + `getBlock` instead. |
 

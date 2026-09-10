@@ -28,7 +28,7 @@ Locked during the pre-submission audit on **2 Sep 2026**; state re-verified
 | Prize wallet | The user's **personal** wallet (kept separate from the project/agent wallet `0xa847…5be97`) |
 | Mentorship | Yes |
 
-> ⚠️ **Never submit the merchant host** (`guardrail-nxzi.onrender.com`) as the
+> ⚠️ **Never submit the merchant host** (`guardrail-ohky.onrender.com`) as the
 > main URL. It is the x402 API backend: `/` returns `{"error":"not found"}`.
 > A judge clicking it sees a JSON error. The UI is the Vercel URL.
 
