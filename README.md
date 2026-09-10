@@ -40,7 +40,8 @@ Three onchain bounds cap the blast radius:
 
 - **Allowlist** — the key can only call an exact set of contracts (here
   `PancakeSwapRouter + WBNB`); anything else reverts `UnauthorizedCall`.
-- **Spend cap** — the key can move at most `0.02 tBNB/day`; it physically
+- **Spend cap** — the key can move at most the declared amount
+  (`0.02 BNB/day` on the live mainnet listings); it physically
   cannot go over.
 - **Expiry** — the key dies on a fixed date whether the owner revokes or not.
 
@@ -130,8 +131,9 @@ proven end to end against the **live mainnet deployment** in a fork test
 (`contracts/test/HireFork.t.sol`, job status FUNDED, escrow held).
 
 The marketplace web UI **records every hire onchain** by calling the
-marketplace's own `recordHire(listingId)` — a real BSC testnet transaction
-that increments the agent's hire counter and is visible in the explorer.
+marketplace's own `recordHire(listingId)` — a real BSC **mainnet** transaction
+(chain 56; the route is wired to the live v2 marketplace) that increments the
+agent's hire counter and is visible in the explorer.
 
 > ⚠️ **Known testnet blocker (external):** the testnet EvaluatorRouter was
 > upgraded and its policy whitelist was wiped (`policyWhitelist` returns false;
@@ -148,10 +150,11 @@ that increments the agent's hire counter and is visible in the explorer.
 endpoints: `/v1/agents/{health|yield|lp|grid}`.
 
 - First contact → **402 challenge**: 0.1 $U, payTo the GuardRail wallet,
-  EIP-3009 rail on $U, chain `eip155:97`
+  EIP-3009 rail on $U, chain `eip155:56` (BSC mainnet)
 - Buyer signs a `TransferWithAuthorization` → merchant verifies, **settles
   onchain**, serves the live agent report
-- Verified live: multiple paid purchases settled on testnet
+- Verified live: a 0.1 $U purchase settled on BSC mainnet
+  (payer/amount/token/rail all read back from the receipt)
 
 The web app's **Buy report** button on every card runs this flow.
 
@@ -186,8 +189,30 @@ contracts/   Foundry: GuardRailMarketplace (verifyLive, scopeAudit,
 demo/        TypeScript: live demo, agents/, x402 merchant + buyer,
              hire flow, ERC-8004 registration
 web/         Next.js marketplace (port 3050): dynamic listings,
-             live badges, Hire + Buy report buttons
+             live badges, Hire + Buy report buttons, /proof recompute page
 ```
+
+## Documentation
+
+| Doc | What's in it |
+|---|---|
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | System diagram, the core value flow, why removing the Altana session stack breaks the product (counterfactual table), key modules, deployment topology |
+| [`docs/TECHNICAL.md`](./docs/TECHNICAL.md) | Stack + versions, the scoped-session mechanism, `trustScore` formula, live onchain values, data model, API surface, tests, operations/runbook |
+| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | What's shipped vs proposed next — real hire volume, scope templates, scope-as-an-API, and what is explicitly NOT planned |
+| [`docs/SUBMISSION.md`](./docs/SUBMISSION.md) | Paste-ready submission copy, the theme picks, verification matrix and the live probe commands |
+| `/proof` (live) | Recomputes every onchain claim from chain state at a captured block, with honest verdicts |
+
+## Demo & verification
+
+- **Live marketplace:** <https://guardrail-delta.vercel.app> — 4 listings across
+  the four required categories, all `verifyLive = true` on BSC mainnet.
+- **[`/proof`](https://guardrail-delta.vercel.app/proof)** — the strongest
+  artifact: it re-derives each claim from chain state rather than restating it.
+- **Demo video:** [`docs/demo/guardrail_demo_720p.mp4`](./docs/demo) — a live
+  screencast of the deployed product (home → `/agents` grid → safety proof →
+  `/termix`).
+- **Independent verification** — every claim is checkable with `cast` against
+  the live contract (commands in `docs/TECHNICAL.md` §2.3).
 
 ## Run it
 
@@ -215,34 +240,64 @@ cd web && npm i && npm run build && npm start -- -p 3050
 
 ## Roadmap
 
-**Now — BSC testnet (live demo).** Agents listed, sessions in the testnet
-KeyStore, `verifyLive` true, Buy-report (x402) settling, every hire recorded
-onchain via `recordHire`. The one rail that can't settle on testnet is the
-ERC-8183 escrow, because Altana's router owner wiped the policy whitelist
-there — externally blocked, honestly surfaced in the UI.
-
-**Mainnet (complete, live).** `GuardRailMarketplace` (v2 — adds onchain
-`trustScore()` + `scopeAudit()`) is deployed on BSC mainnet at
+**Live now — BSC mainnet (chain 56), the product.** `GuardRailMarketplace`
+(v2 — adds onchain `trustScore()` + `scopeAudit()`) is deployed at
 `0xb7c80f5154952E48f6E1548282343000c45b80d6`, bound to the mainnet Altana
-KeyStore `0x6572427ED530BadcF7375Cf9A4709D8d2b0E7E0a`. All four agents are
-live there: `listingCount() == 4`, ids 1–4 all `verifyLive=true`,
-`trustScore=40`, full `scopeAudit` returned. On mainnet the OptimisticPolicy
-**is** whitelisted, so the full five-call ERC-8183 escrow hire works — proven
-in `HireFork.t.sol` against the live mainnet stack:
+KeyStore `0x6572427ED530BadcF7375Cf9A4709D8d2b0E7E0a`. All four agents are live
+there: `listingCount() == 4`, ids 1–4 all `verifyLive=true`, `trustScore=40`,
+full `scopeAudit` returned, x402 reports settling in $U. On mainnet the
+OptimisticPolicy **is** whitelisted, so the full five-call ERC-8183 escrow hire
+works — proven in `HireFork.t.sol` against the live mainnet stack:
 kernel `0xEa4DAa3100A767e86FDed867729ae7446476EBA6`,
 router `0x51895229E12F9876011789B04f8698af06cCD6DA`,
 policy `0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5`,
-$U `0xcE24439F2D9C6a2289F741120FE202248B666666`. Marketplaces too old to be
-trusted: the earlier mainnet deploy `0xFB63b0D…Fe28a80` was **v1** (no
-`trustScore`/`scopeAudit`) and is superseded by the v2 above.
+$U `0xcE24439F2D9C6a2289F741120FE202248B666666`. The superseded v1 mainnet
+deploy `0xFB63b0D…Fe28a80` (no `trustScore`/`scopeAudit`) is not used.
+
+**Testnet (chain 97) — safety-demo replay layer only.** The Bankr-style attack
+demo is re-run there (marketplace `0x0e111C58…E566`). The one rail that cannot
+settle on testnet is ERC-8183 escrow: Altana's router owner wiped the policy
+whitelist there, so a raw `registerJob` reverts `PolicyNotWhitelisted`. Only
+the router owner can restore it — externally blocked and honestly surfaced in
+the UI rather than hidden.
+
+**Next:** real hire volume from a first external operator, audited scope
+presets, live settled ERC-8183 jobs, BscScan source verification, and a
+logging-capable RPC. Full forward plan, including what we deliberately will
+*not* build: [`docs/ROADMAP.md`](./docs/ROADMAP.md).
+
+## Honest status
+
+Re-verified live on **10 Sep 2026**. Full matrix in
+[`docs/TECHNICAL.md`](./docs/TECHNICAL.md) §9.
+
+| Area | Status |
+|---|---|
+| Mainnet marketplace v2, 4/4 listings live, `trustScore`/`scopeAudit` | ✅ verified onchain |
+| Scoped sessions (allowlist + spend cap + expiry, KeyStore-registered) | ✅ verified onchain |
+| x402 paid settlement in $U on mainnet | ✅ verified live (0.1 $U, chain 56) |
+| Tests: `forge test` / `vitest run` | ✅ 23/23 and 14/14 passing |
+| ERC-8183 escrow hire | ✅ proven in mainnet fork test; no live settled job on record |
+| Contract source verified on BscScan | ⚠️ not yet — onchain reads verified, explorer verification pending |
+| Hires / ratings recorded | 0 — honest baseline (`trustScore` 40 = base); no invented numbers |
+| x402 merchant availability | ⚠️ Render free tier sleeps on idle, and a suspended service needs dashboard re-activation |
+
+**Known limits we do not hide:** GuardRail protects against *theft and drain*,
+not market loss — a scoped grid bot can still lose money on a bad trade. The
+protection is only as strong as the declared scope: a wide allowlist is the
+owner's choice, and GuardRail won't silently override it. The advisory Claude
+brain is non-binding; if its gateway is unreachable the deterministic rule runs.
 
 ## Security model
 
 - **Self-custodial wallets**: the agent owns its key; nobody can move funds
   without the session.
-- **Scoped sessions**: allowlist + spend cap + expiry, enforced onchain.
+- **Scoped sessions**: allowlist + spend cap + expiry, enforced onchain at
+  validation time — out-of-scope calls revert before broadcast.
 - **One-tx revoke**: kill any agent instantly; marketplace `verifyLive` flips
-  to false on the next poll.
-- **No admin lies**: listings are bound to KeyStore-verified live sessions.
+  to false on the next poll and `trustScore` drops to 0.
+- **No admin lies**: listings are bound to KeyStore-verified live sessions;
+  the registry is public, so any third party can re-check.
 - **Honest rails**: when an external dependency is broken (testnet ERC-8183
   whitelist), the UI says so instead of pretending.
+
