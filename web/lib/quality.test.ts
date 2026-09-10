@@ -86,11 +86,29 @@ describe("summariseListing — the honesty rules", () => {
         act(),
         act({ verified: false }),                       // unverified → excluded
         act({ listingId: 2 }),                          // other listing → excluded
-        act({ kind: "listed" }),                        // not an agent-act → excluded
+        act({ kind: "listed" }),                        // not an action → excluded
       ],
     });
     expect(r.verifiedActions).toBe(1);
     expect(r.gasPaidWei).toBe("100000");
+  });
+
+  it("counts verified hire + rating txs as listing activity", () => {
+    const r = summariseListing({
+      ...base,
+      activity: [
+        act({ kind: "hire" }),
+        act({ kind: "rating" }),
+        act({ kind: "hire", verified: false }),         // unverified → excluded
+      ],
+    });
+    expect(r.verifiedActions).toBe(2);
+    expect(r.gasPaidWei).toBe("200000");
+  });
+
+  it("clears insufficientHistory once real hire/rating txs exist", () => {
+    const r = summariseListing({ ...base, activity: [act({ kind: "hire" }), act({ kind: "rating" })] });
+    expect(r.insufficientHistory).toBe(false);
   });
 
   it("does not report insufficientHistory once a real hire exists", () => {
