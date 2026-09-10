@@ -10,13 +10,13 @@
  *     a scoped swap through its session key to capture the grid tick
  *     (buy low at the lower level, sell high at the upper level),
  *   - every action goes through the session allowlist (PancakeSwap router +
- *     WBNB only), capped at 0.02 tBNB/day, so a runaway grid cannot drain
+ *     WBNB only), capped at 0.02 BNB/day, so a runaway grid cannot drain
  *     the wallet. This is the GuardRail point: the strategy is aggressive
  *     by design, the session is what bounds it.
  *
  * The decision rule is transparent: sell above +spread%, buy below -spread%.
  * Session key is the agent identity on the KeyStore, bound to
- * GuardRailMarketplace listing #7, capped at 0.02 tBNB/day.
+ * GuardRailMarketplace listing #2 (Grid Trading), capped at 0.02 BNB/day on BSC mainnet.
  *
  * Usage: tsx src/agents/gridbot.ts [--once] [--loop-seconds 60] [--act]
  */
@@ -26,7 +26,7 @@ import { act, claudeAdvise, loadAgent, log, PANCAKE_ROUTER, WBNB } from "./lib.j
 
 const USDT = "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd" as `0x${string}`;
 const PAIR = "0x2F72f4FddA2c9344B6f6f075A90A0e48C475d8cA" as `0x${string}`;
-const AMOUNT_IN = parseEther("0.001"); // 0.001 tBNB per grid tick
+const AMOUNT_IN = parseEther("0.001"); // 0.001 BNB per grid tick
 
 const PAIR_ABI = [
   { name: "getReserves", type: "function", stateMutability: "view", inputs: [], outputs: [
@@ -83,7 +83,7 @@ async function checkOnce() {
       functionName: "swapExactETHForTokens",
       args: [1n, [WBNB, USDT], agent.session.walletAddress, BigInt(Math.floor(Date.now() / 1000) + 600)],
     });
-    log(agent.config.name, `grid tick: buying ${AMOUNT_IN} tBNB worth of USDT at the lower grid level (via session)`);
+    log(agent.config.name, `grid tick: buying ${AMOUNT_IN} BNB worth of USDT at the lower grid level (via session)`);
     const result = await act(agent, [{ to: PANCAKE_ROUTER, data: swapData, value: AMOUNT_IN }]);
     log(agent.config.name, result.ok ? `grid tick sent ${result.tx}` : `grid tick blocked by session: ${result.error}`);
     return;
@@ -91,7 +91,7 @@ async function checkOnce() {
 
   // Read-only cycle: report the grid levels and the last execution state.
   log(agent.config.name, `grid armed: buy @ ${buyLevel.toFixed(2)} (-${SPREAD * 100}%), sell @ ${sellLevel.toFixed(2)} (+${SPREAD * 100}%)`);
-  log(agent.config.name, `spend cap 0.02 tBNB/day enforces the max grid exposure onchain`);
+  log(agent.config.name, `spend cap 0.02 BNB/day enforces the max grid exposure onchain`);
 }
 
 const once = process.argv.includes("--once");

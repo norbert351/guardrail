@@ -31,6 +31,10 @@ that scales past one operator.
 - **`/proof` page** — recomputes every onchain claim from chain state at a
   captured block and cross-checks the KeyStore against `scopeAudit().live`,
   with honest verdicts.
+- **Data Quality layer** (`/api/quality` + the "Derived from chain state" panel
+  on every card) — scope narrowness, verified onchain action count, real gas
+  paid, listing age, and a KeyStore-vs-`verifyLive` cross-check, with
+  `insufficientHistory` as a first-class honest state.
 - **x402 / B402 sell rail** — four paid endpoints at 0.1 $U per report,
   EIP-3009 settlement on mainnet.
 - **ERC-8183 hire rail (buyer side)** — five-call atomic job creation + escrow,

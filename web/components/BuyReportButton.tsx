@@ -14,6 +14,8 @@ type BuyResult = {
 type Challenge = {
   x402Version?: number;
   resource?: unknown;
+  network?: string;
+  error?: string;
   accepts?: Array<{
     scheme?: string;
     network?: string;
@@ -24,6 +26,13 @@ type Challenge = {
     extra?: { name?: string; version?: string; assetTransferMethod?: string };
   }>;
 };
+
+/** Pull a human-readable reason out of a failed challenge response. */
+function errorText(body: unknown): string {
+  const e = (body as { error?: unknown })?.error;
+  if (typeof e === "string" && e.length) return e;
+  return "The paid-report service is temporarily unavailable. Listings, scope audits and the safety proof remain live.";
+}
 
 export function BuyReportButton({ kind, agentName }: { kind: "health" | "yield" | "lp" | "grid"; agentName: string }) {
   const { address, isConnected } = useAccount();
@@ -46,11 +55,19 @@ export function BuyReportButton({ kind, agentName }: { kind: "health" | "yield" 
       // 1. Fetch the 402 challenge (price quote).
       const cRes = await fetch(`/api/x402/${kind}`);
       const challenge = (await cRes.json()) as Challenge;
+      if (!cRes.ok) {
+        setResult({ ok: false, error: errorText(challenge) });
+        return;
+      }
       const req = challenge.accepts?.find((a) => a.extra?.assetTransferMethod === "eip3009");
       if (!req || !req.asset || !req.payTo || !req.amount) {
         setResult({ ok: false, error: "merchant offers no eip3009 rail" });
         return;
       }
+      // The signed domain MUST match the chain the merchant settles on. Take it
+      // from the challenge (`network: "eip155:56"`) rather than hardcoding a
+      // chain id — a testnet-domain signature is rejected by a mainnet merchant.
+      const chainId = Number((challenge.network ?? "eip155:56").split(":")[1]) || 56;
 
       // 2. Build + sign EIP-3009 TransferWithAuthorization with the connected wallet.
       const now = Math.floor(Date.now() / 1000);
@@ -64,7 +81,7 @@ export function BuyReportButton({ kind, agentName }: { kind: "health" | "yield" 
         nonce,
       };
       const signature = await signTypedDataAsync({
-        domain: { name: req.extra?.name ?? "United Stables", version: req.extra?.version ?? "1", chainId: 97, verifyingContract: req.asset as Address },
+        domain: { name: req.extra?.name ?? "United Stables", version: req.extra?.version ?? "1", chainId, verifyingContract: req.asset as Address },
         types: {
           TransferWithAuthorization: [
             { name: "from", type: "address" },
@@ -83,7 +100,7 @@ export function BuyReportButton({ kind, agentName }: { kind: "health" | "yield" 
       const envelope = {
         x402Version: 2,
         scheme: "exact",
-        network: "eip155:97",
+        network: challenge.network ?? `eip155:${chainId}`,
         resource: challenge.resource,
         accepted: req,
         payload: {

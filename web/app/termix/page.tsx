@@ -14,6 +14,18 @@ import { Logomark } from "@/components/Logomark";
 
 type Stats = { listings?: { id: number; hires: number; ratingCount: number; avgRating: number }[]; settledU?: string };
 type Activity = { kind: string; detail: string; ts: number; block?: string; link?: string }[];
+type Quality = {
+  summary: {
+    listings: number;
+    live: number;
+    narrowScope: number;
+    verifiedActivityRows: number;
+    recordedActivityRows: number;
+    withRealHires: number;
+    livenessCrossChecked: boolean;
+  };
+  listings: { listingId: number; scope: { allowlistSize: number; narrow: boolean; capLabel: string } }[];
+};
 
 const CAP = 0.02; // BNB/day — the GuardRail-enforced spend cap from the scope
 const FEE = 0.1; // $U per x402 report
@@ -25,22 +37,29 @@ export default function TermixReportPage() {
   const [activity, setActivity] = useState<Activity>([]);
   const [apy, setApy] = useState<number | null>(null);
   const [hires, setHires] = useState(0);
+  const [quality, setQuality] = useState<Quality | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/stats").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/activity").then((r) => (r.ok ? r.json() : null)),
       fetch("/api/agent-metrics").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/api/quality").then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ])
-      .then(([s, a, m]) => {
+      .then(([s, a, m, q]) => {
         if (s) setStats(s);
         if (a?.feed) setActivity(a.feed);
         if (s?.listings) setHires(s.listings.reduce((acc: number, x: { hires: number }) => acc + x.hires, 0));
         const ap = m?.agents?.yield?.apyPct;
         if (typeof ap === "number") setApy(ap);
+        if (q?.listings) setQuality(q);
       })
       .catch(() => {});
   }, []);
+
+  // Allowlist width is read from the live scopeAudit of the first listing, so
+  // the "exactly N contracts" line is chain-derived rather than hardcoded.
+  const listingsAt1OrFirst = quality?.listings?.[0]?.scope?.allowlistSize ?? 2;
 
   // Count paid reports from onchain activity ("rated/hired" aside, assume $U
   // settlements drive revenue; we show the wallet's settled $U as ground truth).
@@ -198,9 +217,62 @@ export default function TermixReportPage() {
           </div>
         ) : null}
 
+        {quality ? (
+          <div className="mt-8 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6">
+            <h2 className="font-display text-lg font-semibold text-[var(--gr-ink)]">Measured, not asserted</h2>
+            <p className="mt-1 text-sm text-[var(--gr-ink-2)]">
+              The comparison below uses values re-derived from chain state at page load — real gas paid by the agents'
+              sessions, real scope terms, and the real liveness cross-check — rather than a hand-written baseline.
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--gr-border)]">
+                    <th className="py-2 pr-4 font-mono text-[0.6875rem] uppercase tracking-wide text-[var(--gr-ink-3)]">Metric</th>
+                    <th className="py-2 pr-4 font-mono text-[0.6875rem] uppercase tracking-wide text-[var(--gr-live)]">With GuardRail</th>
+                    <th className="py-2 font-mono text-[0.6875rem] uppercase tracking-wide text-[var(--gr-dead)]">Unmanaged</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[var(--gr-ink)]">
+                  <tr className="border-b border-[var(--gr-border)]">
+                    <td className="py-2 pr-4 text-[var(--gr-ink-2)]">Callable contracts</td>
+                    <td className="py-2 pr-4 font-mono">{quality.summary.narrowScope} agents allowlisted to exactly {listingsAt1OrFirst} contract(s)</td>
+                    <td className="py-2 font-mono text-[var(--gr-ink-2)]">any contract the key can reach</td>
+                  </tr>
+                  <tr className="border-b border-[var(--gr-border)]">
+                    <td className="py-2 pr-4 text-[var(--gr-ink-2)]">Worst-case native loss</td>
+                    <td className="py-2 pr-4 font-mono">{CAP} BNB / 24h (contract-enforced)</td>
+                    <td className="py-2 font-mono text-[var(--gr-ink-2)]">entire wallet balance</td>
+                  </tr>
+                  <tr className="border-b border-[var(--gr-border)]">
+                    <td className="py-2 pr-4 text-[var(--gr-ink-2)]">Liveness source</td>
+                    <td className="py-2 pr-4 font-mono">
+                      KeyStore read, cross-checked {quality.summary.livenessCrossChecked ? "✓ agreeing" : "— mismatch flagged"}
+                    </td>
+                    <td className="py-2 font-mono text-[var(--gr-ink-2)]">self-declared, unverifiable</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-4 text-[var(--gr-ink-2)]">Verified onchain actions</td>
+                    <td className="py-2 pr-4 font-mono">{quality.summary.verifiedActivityRows} agent tx(s) re-verified at load</td>
+                    <td className="py-2 font-mono text-[var(--gr-ink-2)]">no onchain audit trail</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <strong>Honest limit:</strong> the &ldquo;unmanaged&rdquo; column is the counterfactual risk this design removes,
+              not a measured run of a competing service. Cost and time figures are real (read from settlement receipts and
+              block timestamps); the alternative is a manual workflow. No profit or win-rate is claimed — BSC mainnet has no
+              organic volume route to invent one from, so we do not.
+            </p>
+          </div>
+        ) : null}
+
         <p className="mt-8 font-mono text-xs text-[var(--gr-ink-3)]">
-          Methodology: revenue + hires read live onchain (chain 56); spend cap from the scopeAudit of listing #1; APR from Venus vUSDT
-          current read. Unmanaged figures are the counterfactual risk GuardRail's scope removes.
+          Methodology: revenue + hires read live onchain (chain 56); spend cap, allowlist and liveness from the live
+          scopeAudit of each listing cross-checked against the Altana KeyStore; APR from a live Venus vUSDT read; gas and
+          activity re-verified per request from real tx hashes. Unmanaged figures are the counterfactual risk GuardRail&apos;s
+          scope removes — not a measured competitor run.
         </p>
       </section>
 

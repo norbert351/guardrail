@@ -14,7 +14,7 @@
  *
  * The decision rule is transparent: pick max(APR) above the floor and a
  * rebalance margin. Session key is the agent identity on the KeyStore,
- * bound to GuardRailMarketplace listing #8, capped at 0.02 tBNB/day.
+ * bound to GuardRailMarketplace listing #3 (Yield Optimisation), capped at 0.02 BNB/day on BSC mainnet.
  *
  * Usage: tsx src/agents/yield-router.ts [--once] [--loop-seconds 60]
  */

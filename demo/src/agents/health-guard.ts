@@ -11,8 +11,8 @@
  *   - otherwise it reports all clear.
  *
  * The session key is the agent's identity: registered in the Altana KeyStore,
- * bound to GuardRailMarketplace listing #9. Every action goes through that
- * session and is capped at 0.02 tBNB/day onchain.
+ * bound to GuardRailMarketplace listing #4 (Health Factor) on BSC mainnet. Every action goes through that
+ * session and is capped at 0.02 BNB/day onchain.
  *
  * Usage: tsx src/agents/health-guard.ts [--once] [--loop-seconds 60]
  */

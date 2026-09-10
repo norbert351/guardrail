@@ -143,13 +143,15 @@ repo): `GUARDRAIL_ADMIN_KEY`, `GUARDRAIL_AGENT_KEYS`, `GUARDRAIL_NETWORK=mainnet
 | 4 listings live on BSC mainnet | `listingCount()=4`, `verifyLive(1..4)=true` with `cast`, 10 Sep | ✅ VERIFIED |
 | Sessions carry allowlist + cap + expiry | `scopeAudit(1)` → PancakeSwap+WBNB, 0.02 BNB/day, 86400s | ✅ VERIFIED |
 | `trustScore` is onchain | `trustScore(1)=40` read from the contract | ✅ VERIFIED |
+| Liveness is real, not cached | `/api/quality` reads the KeyStore `isValidKey` and cross-checks it against `verifyLive` → `agree: true` | ✅ VERIFIED |
 | `list()` is gated on a live session | `contracts/src/GuardRailMarketplace.sol` reverts `SessionNotLive`; covered by `test_ListWithLiveSession` | ✅ VERIFIED |
 | Out-of-scope call blocked | `demo/src/agent-act-mainnet.ts` + Foundry tests (`UnauthorizedCall`) | ✅ VERIFIED |
 | x402 settles in $U on mainnet | live 402→200 with receipt `{payer, 0.1e18, $U, eip3009}` | ✅ VERIFIED |
+| 7 recorded onchain txs are real | each re-fetched per request: status success, real block + gas | ✅ VERIFIED |
 | ERC-8183 escrow hire | mainnet fork test `HireFork.t.sol` (FUNDED, escrow held) | ⚠️ PROVEN-IN-FORK (no live settled job on record) |
-| Contract source verified on BscScan | not yet published | ❌ NOT DONE |
-| Hires / ratings > 0 | `/api/stats` reads 0 across all listings | ❌ NONE YET (honest base score 40) |
-| Merchant reachable during judging | `curl /healthz` returned the Render "Service Suspended" page | ❌ BLOCKED AT AUDIT TIME |
+| Contract source verified on BscScan | `contracts/verify-bscscan.sh` staged; needs an Etherscan API key | ❌ BLOCKED (key only) |
+| Hires / ratings > 0 | `/api/stats` reads 0; `recordHire` simulates OK but wallet holds ~0.000025 BNB vs ~0.0000335 BNB gas | ❌ NONE YET (needs wallet top-up) |
+| Merchant reachable during judging | `curl /healthz` returned the Render "Service Suspended" page | ❌ BLOCKED (needs dashboard re-activation) |
 
 ## 9. Known constraints (state honestly if asked)
 

@@ -12,7 +12,7 @@
  *
  * The rule is transparent: rebalance when price vs anchor exits the band.
  * Session key is the agent identity on the KeyStore, bound to
- * GuardRailMarketplace listing #6, capped at 0.02 tBNB/day.
+ * GuardRailMarketplace listing #1 (Rebalancing), capped at 0.02 BNB/day on BSC mainnet.
  *
  * Usage: tsx src/agents/lp-guardian.ts [--once] [--loop-seconds 60]
  */

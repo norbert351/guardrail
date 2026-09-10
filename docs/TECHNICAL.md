@@ -191,23 +191,28 @@ Web API routes read these live per request; there is no cache to go stale.
 | Route | Returns |
 |---|---|
 | `GET /api/listings` | `listingCount`, `live`, and per listing: id, category, name, agentWallet, sessionKeyId, operator, `live`, `active`, allowlist, `trustScore`, cap `{token,limit,period}` |
+| `GET /api/quality` | **Data Quality layer.** Per listing: scope metrics (allowlist width, `narrow`, cap label, period), contract `trustScore`, verified onchain actions + real gas paid, listing age, hire/rating record, an honest `insufficientHistory` flag, and a KeyStore-vs-`verifyLive` **cross-check** (`keyStoreLive`, `agree`) |
 | `GET /api/stats` | marketplace + KeyStore addresses, `chainId`, agentWallet, `settledU`, per-listing hires/rating |
 | `GET /api/safety-proof?listingId=&kind=drain\|call\|cap\|within` | reads `scopeAudit()` and reasons over the **real** allowlist + cap — no gas, no broadcast |
 | `GET /api/agent-metrics` | live market data (e.g. Venus vUSDT supply APR) |
-| `GET /api/activity` | feed derived from recorded real tx hashes via `getTransaction` + `getBlock` (public BSC RPCs block `eth_getLogs`) |
-| `GET /api/x402/{kind}` | proxies to the merchant, returns the 402 challenge |
+| `GET /api/activity` | feed derived from recorded real tx hashes, each re-verified per request (`getTransaction`+`getReceipt`+`getBlock`); a hash that stops resolving is dropped, never faked (public BSC RPCs block `eth_getLogs`) |
+| `GET /api/x402/{kind}` | proxies to the merchant, returns the 402 challenge; degrades to an honest 503 + reason when the merchant host is down/suspended |
 | `POST /api/hire` | `{provider, listingId}` → admin-key `recordHire` onchain |
 | `GET /api/hire/status` | escrow availability, honest about the testnet policy block |
+
+The quality values are computed in `web/lib/quality.ts` (unit-tested in
+`web/lib/quality.test.ts`, 15 tests) and rendered as the "Derived from chain
+state" panel on each `/agents` card.
 
 ## 6. Testing
 
 ```bash
 cd contracts && forge test          # 23 local tests, 0 failed
-cd web       && npx vitest run      # 14 tests (8 continuum + 6 format)
+cd web       && npx vitest run      # 29 tests (15 quality + 8 continuum + 6 format)
 ```
 
 Run 2026-09-10: **23/23 forge passed** (2 fork tests skipped without
-`--fork-url`), **14/14 vitest passed**.
+`--fork-url`), **29/29 vitest passed**.
 
 Axis-critical tests (the ones that prove the spine, not just the code):
 `test_VerifyLiveTrueWhileKeyLive`, `test_VerifyLiveFalseAfterRevoke`,
@@ -259,21 +264,31 @@ verbatim with no wrapping quotes — a mangled value throws
 
 Render free-tier services idle after ~15 minutes and a **suspended** service
 needs dashboard re-activation (not a retry). The keep-alive watchdog for this
-project is `~/.hermes/scripts/guardrail-warm.sh`, wired as a `no_agent` cron
-(`45653f11929f`, every 3 h) that pings `https://guardrail-nxzi.onrender.com/healthz`
-and stays silent on 200.
+project is `~/.hermes/scripts/guardrail_keepalive.sh`, wired as a `no_agent`
+cron (`45653f11929f`, every 10m) that pings the **live** hosts
+(`guardrail-nxzi.onrender.com/healthz` + `guardrail-delta.vercel.app`) and stays
+silent on success. It explicitly detects Render's "Service Suspended" page and
+reports it — a suspended merchant leaves every Buy button dead, so it must
+alert rather than read as warm.
+
+> An earlier version of this script pinged `guardrail.onrender.com` (dead, HTTP
+> 000) and `guardrail-merchant.onrender.com` (404, never the live service), so it
+> reported "ok" while the real merchant was suspended. Never ping a host from
+> `render.yaml`'s blueprint *name* — probe to find the real URL first.
 
 Operational checks before a judging window:
 
 ```bash
 curl -s -m 55 https://guardrail-nxzi.onrender.com/healthz   # {"ok":true,...}
 curl -s -m 25 https://guardrail-delta.vercel.app/api/x402/health | head -c 200
+bash ~/.hermes/scripts/guardrail_keepalive.sh               # silent = healthy
 ```
 
-The second must return a **402 challenge** (`network eip155:56`), not
-`{"ok":false,"error":"merchant unreachable"}`. If the merchant host serves the
-Render "Service Suspended" page, every Buy button in the UI is dead — that is a
-delivery blocker, not a code bug.
+The second must return a **402 challenge** (`network eip155:56`), not an error
+object. If the merchant host serves the Render "Service Suspended" page, every
+Buy button in the UI is dead — that is a delivery blocker, not a code bug. The
+web proxy now degrades honestly in that case (HTTP 503 + a readable reason on
+`/api/x402/{kind}`) instead of surfacing a raw `SyntaxError`.
 
 ### 7.3 Redeploy / relist workflow
 
@@ -316,10 +331,12 @@ delivery blocker, not a code bug.
 | Mainnet marketplace v2, 4/4 listings live | ✅ verified onchain |
 | Scoped sessions (allowlist + cap + expiry) | ✅ verified onchain |
 | `trustScore` / `scopeAudit` | ✅ verified onchain |
+| **Data Quality layer** (`/api/quality` + card panel) | ✅ shipped — scope, verified actions, real gas, liveness cross-check |
 | `/proof` recompute page | ✅ shipped, reads live chain state |
 | x402 paid settlement in $U | ✅ verified live (0.1 $U, chain 56) |
 | ERC-8183 escrow hire | ✅ proven in mainnet fork test; ⚠️ no live settled job on record |
-| Contract source verified on BscScan | ⚠️ **not yet** — onchain reads verified, explorer source-verification pending |
-| Merchant availability during judging | ⚠️ was **suspended** at audit time (2026-09-10); needs re-activation |
-| Hires / ratings recorded | 0 — honest baseline (`trustScore` 40 = base); no invented numbers |
+| Contract source verified on BscScan | ⚠️ **staged, not done** — run `contracts/verify-bscscan.sh` with an `ETHERSCAN_API_KEY` (the only blocker) |
+| Merchant availability during judging | ⚠️ was **suspended** at audit time; needs dashboard re-activation. Web now degrades honestly (503 + reason) |
+| Hires / ratings recorded | 0 — honest baseline (`trustScore` 40 = base); `recordHire` gas≈33.5k (~0.0000335 BNB) but the agent wallet holds only ~0.000025 BNB, so **no hire can land until it is topped up** |
+| Test suite | 23/23 forge · 29/29 vitest · demo `tsc` clean |
 

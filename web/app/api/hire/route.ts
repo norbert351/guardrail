@@ -5,16 +5,20 @@ import { existsSync, readFileSync } from "node:fs";
 
 /**
  * POST /api/hire
- * Body: { provider: string, task?: string, budget?: number }
+ * Body: { provider: string, listingId?: number, task?: string, budget?: number }
  *
- * Honest change on the GuardRail marketplace's own contract: on BSC testnet
- * records the hire onchain by calling the marketplace's recordHire(listingId)
- * — a real transaction that increments the agent's hire counter in the
- * explorer. This is NOT the ERC-8183 escrow: that rail is externally blocked
- * on testnet (the EvaluatorRouter's OptimisticPolicy whitelist was wiped by an
- * Altana upgrade; registerJob reverts with PolicyNotWhitelisted, only the
- * router owner can restore it). The UI surfaces the truth about the escrow
- * instead of faking it, and the full escrow flow is proven on mainnet.
+ * Records the hire onchain on the GuardRail marketplace's own contract by
+ * calling `recordHire(listingId)` — a real BSC **MAINNET** transaction
+ * (chain 56, live v2 marketplace 0xb7c80f…80d6) that increments the agent's
+ * hire counter and is visible on BscScan. `recordHire` is public (no access
+ * control), so anyone can call it; the UI gates the button behind
+ * wallet-connect as an anti-bot step, by design.
+ *
+ * This is NOT the ERC-8183 escrow rail. That rail is externally blocked on
+ * CHAIN (Altana's EvaluatorRouter upgrade wiped the OptimisticPolicy
+ * whitelist; registerJob reverts PolicyNotWhitelisted) but works on MAINNET,
+ * where the full five-call flow is proven in contracts/test/HireFork.t.sol.
+ * The UI surfaces the truth about escrow instead of faking it.
  *
  * Returns { ok, tx?, listingId?, hires?, escrow?, error? }.
  */
@@ -44,7 +48,7 @@ export async function POST(req: Request) {
   // two agents sharing one wallet still record to the right listing.
   const requestedListing = body.listingId && Number.isInteger(body.listingId) ? body.listingId : undefined;
 
-  const TESTNET = {
+  const CHAIN = {
     chainId: 56,
     rpc: "https://bsc-dataseed.bnbchain.org",
     explorer: "https://bscscan.com",
@@ -53,8 +57,8 @@ export async function POST(req: Request) {
     policy: "0x4F4678D4439feC812Ac7674Bb3Efb4C8f5Fb78A6" as Address,
   };
 
-  const chain = { id: TESTNET.chainId, name: "BNB Smart Chain" } as Chain;
-  const pubClient = createPublicClient({ chain, transport: http(TESTNET.rpc, { timeout: 15_000 }) });
+  const chain = { id: CHAIN.chainId, name: "BNB Smart Chain" } as Chain;
+  const pubClient = createPublicClient({ chain, transport: http(CHAIN.rpc, { timeout: 15_000 }) });
 
   // Signer: the GuardRail admin wallet (same wallet that owns the listings).
   const account = privateKeyToAccount(adminKeyOf());
@@ -69,19 +73,19 @@ export async function POST(req: Request) {
       { name: "stats", type: "function", stateMutability: "view", inputs: [{ name: "id", type: "uint256" }], outputs: [{ name: "hires", type: "uint32" }, { name: "ratingSum", type: "uint256" }, { name: "ratingCount", type: "uint32" }] },
     ] as const;
 
-    const count = Number(await pubClient.readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "listingCount" }));
+    const count = Number(await pubClient.readContract({ address: CHAIN.marketplace, abi: MARKETPLACE_ABI, functionName: "listingCount" }));
     let listingId: number | null = null;
     if (requestedListing !== undefined) {
       // Validate the requested listing exists and is owned by the provider.
       const s = await pubClient
-        .readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "listingSummary", args: [BigInt(requestedListing)] })
+        .readContract({ address: CHAIN.marketplace, abi: MARKETPLACE_ABI, functionName: "listingSummary", args: [BigInt(requestedListing)] })
         .catch(() => null);
       if (s && String(s[3]).toLowerCase() === provider.toLowerCase()) listingId = requestedListing;
     }
     if (listingId === null) {
       for (let i = 1; i <= count; i++) {
         const s = await pubClient
-          .readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "listingSummary", args: [BigInt(i)] })
+          .readContract({ address: CHAIN.marketplace, abi: MARKETPLACE_ABI, functionName: "listingSummary", args: [BigInt(i)] })
           .catch(() => null);
         if (s && String(s[3]).toLowerCase() === provider.toLowerCase()) {
           listingId = i;
@@ -94,9 +98,9 @@ export async function POST(req: Request) {
     }
 
     // Broadcast recordHire(listingId) from the admin wallet (pays testnet gas).
-    const walletClient = createWalletClient({ account, chain, transport: http(TESTNET.rpc, { timeout: 15_000 }) });
+    const walletClient = createWalletClient({ account, chain, transport: http(CHAIN.rpc, { timeout: 15_000 }) });
     const tx = await walletClient.writeContract({
-      address: TESTNET.marketplace,
+      address: CHAIN.marketplace,
       abi: MARKETPLACE_ABI,
       functionName: "recordHire",
       args: [BigInt(listingId)],
@@ -106,7 +110,7 @@ export async function POST(req: Request) {
     // Read post-state: hire count for this listing.
     let hires: number | null = null;
     try {
-      const st = (await pubClient.readContract({ address: TESTNET.marketplace, abi: MARKETPLACE_ABI, functionName: "stats", args: [BigInt(listingId)] })) as readonly [number, bigint, number];
+      const st = (await pubClient.readContract({ address: CHAIN.marketplace, abi: MARKETPLACE_ABI, functionName: "stats", args: [BigInt(listingId)] })) as readonly [number, bigint, number];
       hires = Number(st[0]);
     } catch { /* ignore */ }
 
@@ -114,10 +118,10 @@ export async function POST(req: Request) {
     let canEscrow: boolean | undefined;
     try {
       canEscrow = (await pubClient.readContract({
-        address: TESTNET.router,
+        address: CHAIN.router,
         abi: [{ name: "policyWhitelist", type: "function", stateMutability: "view", inputs: [{ name: "policy", type: "address" }], outputs: [{ type: "bool" }] }],
         functionName: "policyWhitelist",
-        args: [TESTNET.policy],
+        args: [CHAIN.policy],
       })) as boolean;
     } catch { /* ignore */ }
 

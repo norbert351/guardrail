@@ -31,10 +31,24 @@ export async function GET(
   if (sig) headers["PAYMENT-SIGNATURE"] = sig;
   try {
     const r = await fetch(`${merchantUrl}/v1/agents/${kind}`, { headers });
-    const body = await r.json();
-    return NextResponse.json(body, { status: r.status });
+    const raw = await r.text();
+    // The merchant host can return an HTML error page (Render "Service
+    // Suspended", a proxy 5xx, ...) instead of JSON. Parsing that blindly
+    // throws a SyntaxError that reads like a code bug and hides the real
+    // condition, so detect it and report the actual state.
+    const parsed = safeJson(raw);
+    if (parsed === undefined) {
+      return NextResponse.json(
+        { ok: false, error: merchantDownMessage(r.status), merchantStatus: r.status },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json(parsed, { status: r.status });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: `merchant unreachable: ${String(e)}` }, { status: 502 });
+    return NextResponse.json(
+      { ok: false, error: merchantDownMessage(0), merchantStatus: 0, detail: String(e) },
+      { status: 503 },
+    );
   }
 }
 
@@ -62,9 +76,44 @@ export async function POST(
     const r = await fetch(`${merchantUrl}/v1/agents/${kind}`, {
       headers: { "X-PAYMENT": header, "PAYMENT-SIGNATURE": header, "content-type": "application/json" },
     });
-    const body = await r.json();
-    return NextResponse.json(body, { status: r.status });
+    const raw = await r.text();
+    const parsed = safeJson(raw);
+    if (parsed === undefined) {
+      return NextResponse.json(
+        { ok: false, error: merchantDownMessage(r.status), merchantStatus: r.status },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json(parsed, { status: r.status });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: `merchant unreachable: ${String(e)}` }, { status: 502 });
+    return NextResponse.json(
+      { ok: false, error: merchantDownMessage(0), merchantStatus: 0, detail: String(e) },
+      { status: 503 },
+    );
   }
+}
+
+/** Parse JSON without throwing; returns undefined when the body is not JSON. */
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * A short, honest, human-readable reason the paid-report rail is unavailable.
+ * Deliberately distinguishes "the host is suspended" from "the host is down"
+ * from "network failure", because the first needs a dashboard action and the
+ * other two are transient.
+ */
+function merchantDownMessage(status: number): string {
+  if (status === 503) {
+    return "The x402 merchant service is currently unavailable (host suspended or restarting). Paid report purchase is temporarily off; listings, scope audits and the safety proof remain fully live and onchain.";
+  }
+  if (status === 0) {
+    return "Could not reach the x402 merchant service (network error). Paid report purchase is temporarily off; listings, scope audits and the safety proof remain fully live and onchain.";
+  }
+  return `The x402 merchant returned an unexpected response (HTTP ${status}). Paid report purchase is temporarily off; listings, scope audits and the safety proof remain fully live and onchain.`;
 }

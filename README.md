@@ -275,18 +275,21 @@ Re-verified live on **10 Sep 2026**. Full matrix in
 |---|---|
 | Mainnet marketplace v2, 4/4 listings live, `trustScore`/`scopeAudit` | ✅ verified onchain |
 | Scoped sessions (allowlist + spend cap + expiry, KeyStore-registered) | ✅ verified onchain |
+| **Data Quality layer** — scope narrowness, verified onchain actions, real gas paid, KeyStore liveness cross-check | ✅ shipped (`/api/quality` + card panel) |
 | x402 paid settlement in $U on mainnet | ✅ verified live (0.1 $U, chain 56) |
-| Tests: `forge test` / `vitest run` | ✅ 23/23 and 14/14 passing |
+| Tests: `forge test` / `vitest run` | ✅ 23/23 and 29/29 passing |
 | ERC-8183 escrow hire | ✅ proven in mainnet fork test; no live settled job on record |
-| Contract source verified on BscScan | ⚠️ not yet — onchain reads verified, explorer verification pending |
-| Hires / ratings recorded | 0 — honest baseline (`trustScore` 40 = base); no invented numbers |
-| x402 merchant availability | ⚠️ Render free tier sleeps on idle, and a suspended service needs dashboard re-activation |
+| Contract source verified on BscScan | ⚠️ staged — run `contracts/verify-bscscan.sh` with an Etherscan API key |
+| Hires / ratings recorded | 0 — honest baseline (`trustScore` 40 = base). `recordHire` needs ~0.0000335 BNB gas; the wallet holds ~0.000025 BNB, so a top-up is required before any hire can land |
+| x402 merchant availability | ⚠️ Render free tier sleeps on idle; a suspended service needs dashboard re-activation. The web degrades honestly (503 + reason) rather than erroring opaquely |
 
 **Known limits we do not hide:** GuardRail protects against *theft and drain*,
 not market loss — a scoped grid bot can still lose money on a bad trade. The
 protection is only as strong as the declared scope: a wide allowlist is the
 owner's choice, and GuardRail won't silently override it. The advisory Claude
 brain is non-binding; if its gateway is unreachable the deterministic rule runs.
+The "unmanaged" column on the TermiX report is the counterfactual risk this
+design removes — **not** a measured run of a competing paid service.
 
 ## Security model
 

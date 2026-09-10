@@ -18,11 +18,15 @@ import { spawn } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
+// Listing ids on the CURRENT (v2 mainnet) marketplace: 1=Rebalancing,
+// 2=Grid Trading, 3=Yield Optimisation, 4=Health Factor. These must match
+// `/api/listings`; older contract instances used ids 5-9 and stale labels here
+// made the loop log disagree with the marketplace UI.
 const AGENTS = [
-  { name: "lp-guardian", listing: 6, script: "src/agents/lp-guardian.ts" },
-  { name: "gridbot", listing: 7, script: "src/agents/gridbot.ts" },
-  { name: "yield-router", listing: 8, script: "src/agents/yield-router.ts" },
-  { name: "health-guard", listing: 9, script: "src/agents/health-guard.ts" },
+  { name: "lp-guardian", listing: 1, script: "src/agents/lp-guardian.ts" },
+  { name: "gridbot", listing: 2, script: "src/agents/gridbot.ts" },
+  { name: "yield-router", listing: 3, script: "src/agents/yield-router.ts" },
+  { name: "health-guard", listing: 4, script: "src/agents/health-guard.ts" },
 ];
 
 function argValue(flag: string, args: string[], def: string): string {

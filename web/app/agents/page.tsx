@@ -21,6 +21,75 @@ const KIND_BY_CATEGORY = ["lp", "grid", "yield", "health"] as const;
 const IDENTITY_BY_CATEGORY = [1790, 1791, 1792, 1793] as const;
 const SCAN = "https://8004scan.io/agents";
 
+/**
+ * Per-listing data-quality row, fetched from /api/quality (all values derived
+ * from chain state at request time — see web/lib/quality.ts).
+ */
+type QualityRow = {
+  listingId: number;
+  trustScore: number;
+  scope: { allowlistSize: number; narrow: boolean; capLabel: string; capPeriodHours: number | null; live: boolean; active: boolean };
+  verifiedActions: number;
+  gasPaidWei: string;
+  firstActivity: number | null;
+  lastActivity: number | null;
+  ageDays: number | null;
+  hires: number;
+  ratings: number;
+  avgRating: number | null;
+  insufficientHistory: boolean;
+  keyStoreLive?: boolean | null;
+  agree?: boolean | null;
+};
+
+/**
+ * The "informed hire call" panel: what the real onchain record says about this
+ * agent, rather than only what it claims. Deliberately honest — an agent with
+ * no history shows "insufficient history" instead of a fabricated score.
+ */
+function QualityPanel({ q }: { q: QualityRow }) {
+  const gas = formatGas(q.gasPaidWei);
+  const rows: [string, string][] = [
+    ["Scope", `${q.scope.allowlistSize} contract(s)${q.scope.narrow ? " · narrow" : ""}`],
+    ["Cap", q.scope.capLabel],
+    ["Onchain actions", q.verifiedActions ? String(q.verifiedActions) : "none recorded"],
+    ["Gas paid", q.verifiedActions ? gas : "—"],
+    ["Listing age", q.ageDays === null ? "—" : `${q.ageDays}d`],
+    ["Liveness", q.keyStoreLive == null ? "unchecked" : q.agree === false ? "MISMATCH" : q.keyStoreLive ? "KeyStore agrees ✓" : "dead"],
+  ];
+  return (
+    <div className="rounded-lg border border-[var(--gr-border)] bg-[var(--gr-mono-chip)]/50 p-3">
+      <p className="font-mono text-[0.625rem] uppercase tracking-wider text-[var(--gr-ink-3)]">Derived from chain state</p>
+      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex items-baseline justify-between gap-2">
+            <dt className="font-mono text-[0.625rem] text-[var(--gr-ink-3)]">{k}</dt>
+            <dd className="font-mono text-[0.625rem] text-[var(--gr-ink)]">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      {q.insufficientHistory ? (
+        <p className="mt-2 rounded bg-amber-50 px-2 py-1 font-mono text-[0.625rem] text-amber-700">
+          insufficient history — no trades, hires or ratings on record yet
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Format wei gas into a short readable string (gas is tiny; show gwei spend). */
+function formatGas(wei: string): string {
+  try {
+    const v = BigInt(wei);
+    if (v === 0n) return "—";
+    const gwei = Number(v) / 1e9;
+    if (gwei < 0.001) return `${(gwei * 1e6).toFixed(0)} µBNB`;
+    return `${gwei.toFixed(4)} gwei`;
+  } catch {
+    return "—";
+  }
+}
+
 type Listing = {
   id: number;
   category: number;
@@ -260,6 +329,7 @@ function AgentCard({
   hires,
   ratingCount,
   avgRating,
+  quality,
 }: {
   name: string;
   category: string;
@@ -277,6 +347,7 @@ function AgentCard({
   hires?: number;
   ratingCount?: number;
   avgRating?: number;
+  quality?: QualityRow;
 }) {
   return (
     <article className="gr-card group flex h-full flex-col gap-4 rounded-2xl border border-[var(--gr-border)] bg-[var(--gr-surface)] p-6 shadow-[0_1px_2px_rgba(26,20,16,0.04)] transition hover:border-[rgba(194,37,92,0.35)] hover:shadow-[0_8px_30px_rgba(26,20,16,0.07)]">
@@ -321,6 +392,7 @@ function AgentCard({
         <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">op: {operator.slice(0, 6)}…{operator.slice(-4)}</p>
       </div>
       <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">free to list · scope enforced onchain</p>
+      {quality ? <QualityPanel q={quality} /> : null}
       {renderMetrics(categoryIndex, metrics)}
       <div className="mt-auto flex flex-col gap-3 border-t border-[var(--gr-border)] pt-4">
         <div className="flex items-center gap-2">
@@ -340,6 +412,7 @@ export default function AgentsPage() {
   const [metrics, setMetrics] = useState<AgentMetrics["agents"] | undefined>(undefined);
   const [stats, setStats] = useState<Record<number, { hires: number; ratingCount: number; avgRating: number }>>({});
   const [activity, setActivity] = useState<{ kind: string; id: number; agentName: string; detail: string; ts: number; link: string }[]>([]);
+  const [quality, setQuality] = useState<Record<number, QualityRow>>({});
   const [cat, setCat] = useState<number>(-1);
   const [q, setQ] = useState("");
 
@@ -429,6 +502,30 @@ export default function AgentsPage() {
     };
   }, []);
 
+  // Per-listing data-quality rows (scope narrowness, verified onchain actions,
+  // real gas paid, honest history flag). Reads chain state server-side.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/quality");
+        if (!res.ok) return;
+        const j = (await res.json()) as { listings?: QualityRow[] };
+        const m: Record<number, QualityRow> = {};
+        for (const l of j.listings ?? []) m[l.listingId] = l;
+        if (!cancelled) setQuality(m);
+      } catch {
+        /* best-effort */
+      }
+    };
+    load();
+    const t = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
+
   const { data: demoKeyLive } = { data: undefined };
 
   const listings = data?.listings ?? [];
@@ -459,6 +556,7 @@ export default function AgentsPage() {
           hires={stats[l.id]?.hires}
           ratingCount={stats[l.id]?.ratingCount}
           avgRating={stats[l.id]?.avgRating}
+          quality={quality[l.id]}
         />
       </Reveal>
     ));
