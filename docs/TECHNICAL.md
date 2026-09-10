@@ -142,8 +142,31 @@ GET /v1/agents/{health|yield|lp|grid}
 3. Merchant verifies, **settles onchain**, serves the live agent report.
 
 Envelope pitfall: the SDK decoder reads `payload.authorization.from` — the
-`authorization` field must be an **object**, not an array. Use the mainnet
-`$U` token config, not a bare address string.
+`authorization` field must be an **object**, not an array.
+
+**RPC pitfall (cost a live failure 2026-09-10):** the Altana SDK's
+`BNB.publicRpcUrl` is `bsc-rpc.publicnode.com`, which is **archive-only** and
+rejects `eth_getTransactionReceipt` — the exact call settlement verification
+needs. Every paid request failed *after* the signature was presented with
+`Archive requests require a personal token`. The merchant and the agent lib now
+default to `https://bsc-dataseed.bnbchain.org` (overridable via `BNB_RPC_URL`).
+Never rely on the SDK's default RPC for a settlement path.
+
+**Key-config pitfall:** the merchant generates the report from
+`GUARDRAIL_AGENT_KEYS`. If that secret is missing or mangled on the host, the
+payment still settles but the report cannot be built. `loadAgentKeys()` now
+validates each `sessionPk` up front and reports the exact field and its shape
+instead of surfacing a curve library error like *"invalid private key, expected
+hex or 32 bytes, got string"*. On a report failure the server returns `200`
+with `report: null`, a `reportError` explanation, and the settled `receipt` — a
+paid request never returns a raw stack trace.
+
+**Merchant host rotation:** the merchant Render service was re-created under a
+new hostname. `web/lib/merchant.ts` resolves the base URL through a fallback
+chain (configured env → known-good hosts, skipping retired ones) and caches the
+winner, so a stale `GUARDRAIL_MERCHANT_URL` cannot silently kill the Buy path.
+Verified by running the web app with the *stale* URL configured: the proxy still
+returned a live 402 challenge from the correct merchant.
 
 Verified live 2026-09-10 (local merchant against mainnet chain 56):
 

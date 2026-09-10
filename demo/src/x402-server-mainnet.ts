@@ -33,7 +33,12 @@ const merchant = createX402Merchant({
   description: "GuardRail agent capability report (health / yield / LP / grid)",
   resource: { url: "https://guardrail.local/v1/agents", mimeType: "application/json" },
   facilitator: privateKeyToAccount(loadAdminKey()),
-  rpcUrl: BNB.publicRpcUrl,
+  // MUST be an RPC that serves eth_getTransactionReceipt — settlement
+  // verification needs it. The Altana SDK's default `BNB.publicRpcUrl` is
+  // bsc-rpc.publicnode.com, which is ARCHIVE-ONLY and rejects receipt reads
+  // ("Archive requests require a personal token"), making every paid request
+  // fail after the signature is presented. Default to dataseed, allow override.
+  rpcUrl: process.env.BNB_RPC_URL ?? "https://bsc-dataseed.bnbchain.org",
   chain: BNB.chain,
 });
 
@@ -98,7 +103,44 @@ const server = createServer(async (req, res) => {
   }
 
   const receipt = guardResult.receipt!;
-  const report = await agentReport(kind);
+
+  // The payment has ALREADY settled onchain at this point. If report generation
+  // fails (e.g. the host's GUARDRAIL_AGENT_KEYS is missing or malformed), the
+  // buyer must get a clear, honest diagnostic — never a raw stack trace, and
+  // never a silent 200. The receipt is returned either way so the settlement is
+  // still independently verifiable on BscScan.
+  let report: string;
+  try {
+    report = await agentReport(kind);
+  } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    console.error(`[x402] report generation failed for "${kind}": ${msg}`);
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(
+      JSON.stringify(
+        {
+          agent: kind,
+          paid: {
+            payer: receipt.payer,
+            amount: receipt.amount.toString(),
+            token: receipt.token,
+            rail: receipt.rail,
+            chainId: 56,
+          },
+          report: null,
+          reportError:
+            "Payment settled onchain, but this merchant instance could not generate the report. " +
+            "Most likely cause: GUARDRAIL_AGENT_KEYS is missing or malformed on the host. " +
+            `Detail: ${msg}`,
+          settlesOnchain: true,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
   const body = {
     agent: kind,
     listing: `GuardRail ${kind} agent`,

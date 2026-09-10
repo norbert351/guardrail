@@ -104,17 +104,36 @@ export function loadAgentKeys(): {
   // keys to be injected as a JSON secret (GUARDRAIL_AGENT_KEYS). Never commit.
   const env = process.env.GUARDRAIL_AGENT_KEYS;
   if (env) {
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(env);
-      if (!Array.isArray(parsed)) throw new Error("expected an array");
-      return parsed;
+      parsed = JSON.parse(env);
     } catch (e) {
       throw new Error(`GUARDRAIL_AGENT_KEYS is not valid JSON: ${String(e)}`);
     }
+    if (!Array.isArray(parsed)) {
+      throw new Error("GUARDRAIL_AGENT_KEYS must be a JSON array of agent key objects");
+    }
+    // Validate each entry's sessionPk BEFORE it reaches a curve library, whose
+    // own error ("invalid private key, expected hex or 32 bytes, got string")
+    // reads like a code bug and hides the real cause: a malformed/mangled env
+    // var on the host. Fail with the actual field and its shape instead.
+    parsed.forEach((k, i) => {
+      const pk = (k as { sessionPk?: unknown })?.sessionPk;
+      if (typeof pk !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(pk)) {
+        throw new Error(
+          `GUARDRAIL_AGENT_KEYS[${i}].sessionPk is not a 0x-prefixed 32-byte hex key ` +
+            `(got ${typeof pk} of length ${typeof pk === "string" ? pk.length : "n/a"}). ` +
+            `Re-paste the value verbatim — no wrapping quotes — from demo/.guardrail-agent-keys-mainnet.json.`,
+        );
+      }
+    });
+    return parsed as { name: string; category: number; sessionPk: Hex; listingId: number }[];
   }
   const file = join(process.cwd(), ".guardrail-agent-keys.json");
   if (!existsSync(file)) {
-    throw new Error("no .guardrail-agent-keys.json, run provision-agents first");
+    throw new Error(
+      "no agent keys: set GUARDRAIL_AGENT_KEYS (JSON array) on this host, or place .guardrail-agent-keys.json in demo/",
+    );
   }
   return JSON.parse(readFileSync(file, "utf8"));
 }
@@ -148,9 +167,10 @@ export async function loadAgent(category: number): Promise<LoadedAgent> {
 
   // Mainnet client for read-only market data (Venus APRs, real pool state).
   // Testnet RPC does not serve mainnet contracts and hangs on those reads.
+  // NOT bsc-rpc.publicnode.com — archive-only, rejects receipt reads.
   const mainnetPubClient = createPublicClient({
     chain: bsc,
-    transport: http("https://bsc-rpc.publicnode.com", { timeout: 10_000 }),
+    transport: http(process.env.BNB_RPC_URL ?? "https://bsc-dataseed.bnbchain.org", { timeout: 10_000 }),
   });
 
   return {

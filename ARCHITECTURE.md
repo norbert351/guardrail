@@ -147,7 +147,7 @@ and every onchain execute is resolved through the session.
 | Layer | Host | Notes |
 |---|---|---|
 | Marketplace UI + API routes | **Vercel** (`guardrail-delta.vercel.app`), rootDir `web` | Next.js 16. Env: `GUARDRAIL_MERCHANT_URL`, `GUARDRAIL_ADMIN_KEY`, optional `BNB_RPC_URL`. OG origin self-resolves via `VERCEL_PROJECT_PRODUCTION_URL`. |
-| x402 merchant + agent supervisor | **Render** (`guardrail-ohky.onrender.com`), rootDir `demo` | A persistent port-binding server that signs settlements — it cannot run on Vercel serverless. Env: `GUARDRAIL_ADMIN_KEY`, `GUARDRAIL_AGENT_KEYS` (JSON of the **mainnet** key file), `GUARDRAIL_NETWORK=mainnet`, `BNB_RPC_URL`. Free tier idles; keep-alive cron required. |
+| x402 merchant + agent supervisor | **Render** (`guardrail-ohky.onrender.com`), rootDir `demo` | A persistent port-binding server that signs settlements — it cannot run on Vercel serverless. Env: `GUARDRAIL_ADMIN_KEY`, `GUARDRAIL_AGENT_KEYS` (JSON of the **mainnet** key file), `GUARDRAIL_NETWORK=mainnet`, `BNB_RPC_URL`. Free tier idles; keep-alive cron required. Web resolves the host via `web/lib/merchant.ts` (fallback chain), so a stale `GUARDRAIL_MERCHANT_URL` is survivable. |
 | Contracts | BSC mainnet (chain 56) | Deployed via Foundry script. |
 | Chain reads | `https://bsc-dataseed.bnbchain.org` | Note: BSC public RPCs block `eth_getLogs`, so the activity feed derives from recorded tx hashes via `getTransaction` + `getBlock` instead. |
 
