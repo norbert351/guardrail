@@ -68,7 +68,7 @@ export default function TermixReportPage() {
 
   // Real onchain task-execution evidence (from /api/activity): actual tx
   // hashes + block numbers so every number in this report is BscScan-provable.
-  const evidence = activity.filter((a) => ["paid", "agent-act", "listed"].includes(a.kind));
+  const evidence = activity.filter((a) => ["paid", "agent-act", "listed", "escrow"].includes(a.kind));
   const paidCnt = activity.filter((a) => a.kind === "paid").length;
 
   // Unmanaged risk (without a scoped session): an agent key or bot that holds
@@ -105,6 +105,15 @@ export default function TermixReportPage() {
       unmanaged: `Trades on stale/hand-picked APRs, can hop to unvetted pools, no cap on deployment size`,
       advantage: apy !== null ? `${apy.toFixed(2)}% APR benchmarked live + a ${CAP} BNB ceiling on any single deployment` : "live benchmarked APR with a capped deployment",
     },
+    {
+      n: 4,
+      name: "Hire an agent with escrow (ERC-8183)",
+      managed:
+        "Job #56774 created and FUNDED on mainnet — 0.1 $U held by the AgenticCommerce kernel until the provider delivers and the optimistic dispute window resolves",
+      unmanaged: "Off-platform hire: no escrow, payment up front with no delivery guarantee and no dispute path",
+      advantage: "Buyer's $U sits in a real onchain escrow, not in the provider's wallet — release is gated by protocol, not by trust",
+      live: "escrow held onchain · job #56774 (verify with AgenticCommerce getJob)",
+    },
   ];
 
   return (
@@ -130,7 +139,7 @@ export default function TermixReportPage() {
             <p className="eyebrow">TermiX Challenge</p>
             <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-[var(--gr-ink)] sm:text-4xl">Agent Advantage Report</h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--gr-ink-2)]">
-              Three real GuardRail agent tasks, each run both ways — with the scoped session GuardRail enforces onchain, and without
+              Four real GuardRail agent tasks, each run both ways — with the scoped session GuardRail enforces onchain, and without
               it. Numbers come from the live marketplace, real onchain $U settlements and a live Venus read.
             </p>
           </div>

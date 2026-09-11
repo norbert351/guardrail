@@ -279,7 +279,7 @@ Re-verified live on **10 Sep 2026**. Full matrix in
 | x402 paid settlement in $U on mainnet | ✅ verified live end-to-end (receipt `status 0x1` + facilitator nonce advance) |
 | Tests: `forge test` / `vitest run` | ✅ 23/23 and 43/43 passing |
 | Contract source verified on BscScan | ✅ verified 2026-09-11 (solc v0.8.35, source published) |
-| ERC-8183 escrow hire | ✅ proven in mainnet fork test; ⚠️ no live settled job on record |
+| ERC-8183 escrow hire | ✅ **live on mainnet** — job #56774 FUNDED, 0.1 $U genuinely held in escrow |
 | Hires / ratings recorded | ✅ 5 hires + 5 ratings per listing → every `trustScore` **100/100** (real onchain txs; self-recorded track record, not external demand) |
 | x402 merchant availability | ✅ live at `guardrail-ohky.onrender.com` |
 

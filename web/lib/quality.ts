@@ -25,7 +25,7 @@ import { DEMO_AGENT_WALLET } from "./guardrail";
 
 /** A recorded GuardRail transaction, re-verified against the chain. */
 export type ActivityRecord = {
-  kind: "listed" | "paid" | "agent-act" | "deployed" | "hire" | "rating";
+  kind: "listed" | "paid" | "agent-act" | "deployed" | "hire" | "rating" | "escrow";
   agentName: string;
   listingId?: number;
   detail: string;
@@ -53,6 +53,7 @@ export const ACTIVITY: ActivityRecord[] = [
   { kind: "agent-act", agentName: "GuardRail LP Guardian", listingId: 1, detail: "agent executed onchain inside its scoped session (allowlisted WBNB call)", txHash: "0x2d022320c99f7424dcea33b1c72ad070262fd511f98bcfb935530eff760b43bb" },
   { kind: "agent-act", agentName: "GuardRail LP Guardian", listingId: 1, detail: "agent executed onchain inside its scoped session, re-run after funding (allowlisted call)", txHash: "0xa61f271e82c99071ccfb72b384e02b1bbc87832cef8fcfc5d65672d662d6c82e" },
   { kind: "deployed", agentName: "GuardRail v2 marketplace", detail: "marketplace deployed to BSC mainnet, bound to the mainnet Altana KeyStore", txHash: "0xbf3dd81865de1f9d556b8078db77f0c0f356346d0587dd1e98c3400ff592863f" },
+  { kind: "escrow", agentName: "GuardRail marketplace", detail: "ERC-8183 hire #56774 funded on mainnet — 0.1 $U held in escrow (AgenticCommerce kernel)", txHash: "0xf3f15ec3538795ea315b75c85ed155396f66ef93b07c9bbc49845bdc4960f47a" },
   // Real hire + rating txs (first round; moved trustScore 40 -> 76).
   { kind: "hire", agentName: "GuardRail LP Guardian", listingId: 1, detail: "hire recorded onchain via the marketplace (recordHire)", txHash: "0xee6898fb142e31a8a01bac5802ddb6dff4a9dfb533df00afdf68a3ada5120f2f" },
   { kind: "rating", agentName: "GuardRail LP Guardian", listingId: 1, detail: "onchain rating recorded (rate, 5/5)", txHash: "0x939539c27b72e660572357a7bfb0b77b0af0965da807b92fecb98bdc69e5d942" },

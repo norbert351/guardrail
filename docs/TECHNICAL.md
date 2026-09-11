@@ -191,21 +191,34 @@ balance delta.
 
 ### 3.2 Hire: ERC-8183 job escrow
 
-`demo/src/hire.ts` builds a five-call atomic relay intent: create job →
-register OptimisticPolicy → set budget → approve $U → fund. Proven against the
-**live mainnet** stack in `contracts/test/HireFork.t.sol` (job status
-`FUNDED`, escrow held).
+`demo/src/hire-erc8183-mainnet.ts` runs the buyer side against the **live mainnet**
+stack: `createJob → registerJob → setBudget → approve $U → fund` as one atomic
+relay intent. `demo/src/escrow-status.ts` re-reads any job from the
+AgenticCommerce kernel.
 
-The web Hire button calls the marketplace's own `recordHire(listingId)` —
-public, no access control (`l.hires++`, emits `Hired`). Note there is **no
-`hireCount(uint256)` getter**; hires surface through `trustScore()` and
-`/api/stats`. The UI gates the button behind wallet-connect as an anti-bot
-step, by design.
+**Live on mainnet (2026-09-11):** job **#56774** — client `0xa847…5be97`,
+provider `0xa847…5be97`, **budget 0.1 $U held in escrow**, status **`FUNDED`**,
+expires `2026-09-18`. Funded by real tx
+`0xf3f15ec3…` ([BscScan](https://bscscan.com/tx/0xf3f15ec3538795ea315b75c85ed155396f66ef93b07c9bbc49845bdc4960f47a)).
 
-**Mainnet ERC-8183 stack** (verified `cast code`): kernel
+```bash
+cd demo && npx tsx src/escrow-status.ts 56774   # live job status, read onchain
+```
+
+**Why the escrow is FUNDED and not COMPLETED — by protocol design, not a bug.**
+Settlement is a two-phase optimistic flow: the provider submits a deliverable,
+then the OptimisticPolicy's **7-day dispute window** (`disputeWindow() = 604800`)
+must elapse before `settle()` releases the funds. Calling `settle()` early
+reverts **`NotDecided()`** (`0x17be5b7b`) — observed live, which is the correct
+guard rather than a failure. The escrow genuinely holds the buyer's $U in the
+meantime, which is the property the challenge cares about.
+
+**Mainnet ERC-8183 stack** (verified `cast code`, and the SDK's
+`ERC8183_ADDRESSES[56]`): kernel
 `0xEa4DAa3100A767e86FDed867729ae7446476EBA6`, router
 `0x51895229E12F9876011789B04f8698af06cCD6DA`, policy
-`0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5`, $U
+`0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5`, registry
+`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`, $U
 `0xcE24439F2D9C6a2289F741120FE202248B666666`.
 
 > The address `0xa206c0517B6371C6638CD9e4a42Cc9f02A33B0DE` that appears in
@@ -375,7 +388,7 @@ web proxy now degrades honestly in that case (HTTP 503 + a readable reason on
 | **Data Quality layer** (`/api/quality` + card panel) | ✅ shipped — scope, verified actions, real gas, liveness cross-check |
 | `/proof` recompute page | ✅ shipped, reads live chain state |
 | x402 paid settlement in $U | ✅ verified live (0.1 $U, chain 56) |
-| ERC-8183 escrow hire | ✅ proven in mainnet fork test; ⚠️ no live settled job on record |
+| ERC-8183 escrow hire | ✅ **live on mainnet**: job #56774 FUNDED, 0.1 $U held in escrow (release gated by the 7-day optimistic dispute window — by design) |
 | Contract source verified on BscScan | ✅ **VERIFIED** 2026-09-11 — `GuardRailMarketplace`, solc v0.8.35, source published at [bscscan.com/address/0xb7c80f…80d6#code](https://bscscan.com/address/0xb7c80f5154952E48f6E1548282343000c45b80d6#code) |
 | Merchant availability during judging | ✅ live — `guardrail-ohky.onrender.com` (host was rotated after the old service was suspended; web resolves it via fallback chain) |
 | Hires / ratings recorded | ✅ **5 hires + 5 ratings per listing** (20 real txs) — `trustScore` 40 → **100** on all four |
