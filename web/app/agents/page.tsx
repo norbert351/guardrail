@@ -17,8 +17,11 @@ export const dynamic = "force-dynamic";
 
 const CATEGORY_NAMES = ["Rebalancing", "Grid Trading", "Yield Optimisation", "Health Factor Monitoring"];
 const KIND_BY_CATEGORY = ["lp", "grid", "yield", "health"] as const;
-// GuardRail's 4 agent identities on the ERC-8004 registry (per listing index).
-const IDENTITY_BY_CATEGORY = [1790, 1791, 1792, 1793] as const;
+// GuardRail's REAL mainnet ERC-8004 identity ids, minted 2026-09-11 on the
+// mainnet IdentityRegistry (0x8004A169…a432) and owned by the agent wallet
+// 0xa847…5be97. Verified with `ownerOf` onchain.
+// (The previous values 1790–1793 belonged to FOUR OTHER TEAMS — never reuse them.)
+const IDENTITY_BY_CATEGORY = [345084, 345085, 345086, 345087] as const;
 const SCAN = "https://8004scan.io/agents";
 
 /**
