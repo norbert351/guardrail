@@ -61,22 +61,25 @@ run**, and hires landing from a wallet we don't control.
   flow already exists, so the onboarding path is real.
 - Instrument hire → settled-payment → rating as a single funnel and publish it.
 
-### 1b. Table-stakes parity (forced by the live field)
+### 1b. Table-stakes parity — SHIPPED (11 Sep 2026)
 
-Sweeping the other submissions at audit time (11 Sep 2026 — the lane went from
-nascent to ~8+ entries) shows three surfaces that are now **expected rather than
-differentiating**. Not having them costs coverage on discoverability; having them
-is not an edge:
+Sweeping the other submissions at audit time showed the lane at ~8+ entries and
+three surfaces that had become **expected rather than differentiating**. All
+three are now live:
 
-- **Open ERC-8004 registry read** — enumerate every agent anyone has registered,
-  not only our four. The registry contract is the source; no approval step.
-- **MCP server surface** — expose search/detail/track-record as MCP tools so an
-  agent (not only a human) can query the marketplace.
-- **Longer produced demo film** — a 2-minute narrated walkthrough with the
-  numbers read live off chain, not slides.
+- ✅ **Open ERC-8004 registry read** — `/registry` + `/api/registry` enumerate
+  every agent anyone has registered on the mainnet IdentityRegistry. Verified
+  discovering third-party agents alongside ours.
+- ✅ **MCP server surface** — `/api/mcp` with 5 read-only tools, so an agent
+  (not only a human) can query the marketplace. No tool can spend funds.
+- ⏳ **Longer produced demo film** — still the 53s live screencast. A 2-minute
+  narrated walkthrough with numbers read live off chain remains open.
+- ✅ **Real ERC-8004 identities** — registered on mainnet (345084–345087),
+  replacing a set of ids that actually belonged to four other teams.
 
-Ship these for parity, and keep the differentiator where it is: trust state
-**enforced by the registry contract** and **re-derivable from mainnet state**.
+The differentiator is no longer breadth of surface. It is `/verify`: trust state
+**enforced by the registry contract**, **re-derivable from mainnet state**, and
+now **portable** as a certificate a third party can check without us.
 
 ### 2. Scope templates
 

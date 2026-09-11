@@ -244,6 +244,9 @@ Web API routes read these live per request; there is no cache to go stale.
 | Route | Returns |
 |---|---|
 | `GET /api/listings` | `listingCount`, `live`, and per listing: id, category, name, agentWallet, sessionKeyId, operator, `live`, `active`, allowlist, `trustScore`, cap `{token,limit,period}` |
+| `GET /api/scope-certificate?listingId=&block=` | **Portable scope certificate.** Pinned-block read of the agent's authority + a keccak256 `scopeCommitment` a third party can reproduce with `cast` alone. Verdict: `CONTAINED` / `REVOKED_OR_PAUSED` / `MISMATCH` |
+| `GET /api/registry?from=&to=` (or `?agentId=`) | **Open ERC-8004 discovery.** Enumerates a bounded id window on the mainnet IdentityRegistry, decoding `tokenURI` documents. No submission or approval |
+| `POST /api/mcp` | **MCP server** (JSON-RPC). Tools: `search_agents`, `get_agent`, `get_track_record`, `list_registry_agents`, `hire_info`. No tool can spend funds |
 | `GET /api/quality` | **Data Quality layer.** Per listing: scope metrics (allowlist width, `narrow`, cap label, period), contract `trustScore`, verified onchain actions + real gas paid, listing age, hire/rating record, an honest `insufficientHistory` flag, and a KeyStore-vs-`verifyLive` **cross-check** (`keyStoreLive`, `agree`) |
 | `GET /api/activity` | feed of real mainnet txs (deploy, 4 listings, paid report, agent executions, 20 hires + ratings), each re-verified at request time |
 | `GET /api/stats` | marketplace + KeyStore addresses, `chainId`, agentWallet, `settledU`, per-listing hires/rating |
@@ -255,8 +258,33 @@ Web API routes read these live per request; there is no cache to go stale.
 | `GET /api/hire/status` | escrow availability, honest about the testnet policy block |
 
 The quality values are computed in `web/lib/quality.ts` (unit-tested in
-`web/lib/quality.test.ts`, 15 tests) and rendered as the "Derived from chain
+`web/lib/quality.test.ts`, 17 tests) and rendered as the "Derived from chain
 state" panel on each `/agents` card.
+
+### 5.1 The scope certificate (why it is the differentiator)
+
+Every entry in this category claims out-of-scope calls are blocked. This makes
+the claim checkable without re-running the product:
+
+```
+scopeCommitment = keccak256(abi.encode(
+  marketplace, listingId, agentWallet, sessionKeyId,
+  capToken, capLimit, capPeriod, sortedAllowlist))
+```
+
+Read `scopeAudit(id)` + `listingSummary(id)` from the marketplace at a pinned
+block, read `isValidKey(...)` from the Altana KeyStore at the SAME block, then
+recompute the hash. Match = the containment claim holds; mismatch = forged or a
+different block. Sorting the allowlist is deliberate: it stops ordering or
+address case from producing a second valid hash for the same scope.
+
+Verified independently with `cast` alone (no GuardRail code) on 2026-09-11:
+`0xcab3406e9fdb3684ac9113bf20ffb4c79d011fd04a61620126fe84c7a2d9db24`.
+
+**Honest limit:** public BSC RPCs prune historical state (they answer
+`missing trie node` for an old-block `eth_call`), so the certificate defaults to
+the latest block and always includes `blockHash`. Re-running against an old
+`pinnedBlock` needs an archive-capable RPC.
 
 ## 6. Testing
 

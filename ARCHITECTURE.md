@@ -23,6 +23,9 @@ spine (remove it and there is no product, not a degraded one).
                   │  • /agents      listing grid (onchain reads) │
                   │  • /list        self-serve listing (wallet)  │
                   │  • /proof       recompute every claim        │
+                  │  • /verify      PORTABLE SCOPE CERTIFICATE   │
+                  │  • /registry    open ERC-8004 discovery       │
+                  │  • /api/mcp     agent-callable surface        │
                   │  • /termix      Agent Advantage Report       │
                   │  • /api/*       server routes → chain/x402   │
                   └───────┬───────────────────────┬──────────────┘
@@ -140,6 +143,9 @@ and every onchain execute is resolved through the session.
 | `web/lib/guardrail.ts` | Chain + address + ABI config for the web app (`GUARDRAIL_CHAIN_ID`/`_KEYSTORE`/`_MARKETPLACE`, mainnet defaults). |
 | `web/lib/continuum.ts` | The Continuum day-one-consumer client (plain HTTP; best-effort, never blocks the onchain gate). |
 | `web/app/proof/page.tsx` | **`/proof`** — re-derives every onchain claim from chain state at a captured block, with honest verdicts. |
+| `web/app/verify/page.tsx` | **`/verify`** — the portable scope certificate: a keccak256 commitment over the agent's authority that a third party reproduces with `cast` alone. The uniqueness play — a proof of containment, not a promise. |
+| `web/app/registry/page.tsx`, `web/lib/registry.ts` | **`/registry`** — open ERC-8004 discovery, read straight from the IdentityRegistry contract. |
+| `web/app/api/mcp/route.ts` | **MCP server** — 5 read-only tools so an agent (not only a human) can query the marketplace. |
 | `web/app/api/*` | Server routes: `listings`, `stats`, `activity`, `agent-metrics`, `safety-proof`, `x402/{kind}`, `hire`, `hire/status`. |
 
 ## 6. Deployment topology

@@ -201,6 +201,8 @@ web/         Next.js marketplace (port 3050): dynamic listings,
 | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | What's shipped vs proposed next — real hire volume, scope templates, scope-as-an-API, and what is explicitly NOT planned |
 | [`docs/SUBMISSION.md`](./docs/SUBMISSION.md) | Paste-ready submission copy, the theme picks, verification matrix and the live probe commands |
 | `/proof` (live) | Recomputes every onchain claim from chain state at a captured block, with honest verdicts |
+| [`/verify`](https://guardrail-delta.vercel.app/verify) (live) | **Portable scope certificate** — a keccak256 commitment over the agent's authority that anyone can re-derive with `cast` alone |
+| [`/registry`](https://guardrail-delta.vercel.app/registry) (live) | **Open ERC-8004 discovery** — every agent anyone registered, read straight from the contract |
 
 ## Demo & verification
 
@@ -281,13 +283,23 @@ actually separates GuardRail, stated plainly so a judge can check each line:
 | **Settlement** | x402 in mainnet $U, each report carrying its **settlement tx hash**; facilitator nonce advances per call | testnet faucet tokens |
 | **Escrow** | live mainnet ERC-8183 job (#56774, 0.1 $U held) | testnet $U from a faucet |
 | **Proof** | `/proof` recomputes claims at a captured block; BscScan-verified source | README claims |
+| **Portable proof** | `/verify` issues a **scope certificate** — keccak256 over the authority fields — that a third party reproduces with `cast` alone, no GuardRail server | an assertion in a README |
+| **Agent-callable** | **MCP server** at `/api/mcp` (5 tools) so agents query the marketplace | a web page only |
+| **Open discovery** | `/registry` reads the ERC-8004 contract directly — anyone's agent appears, no approval | curated list only |
 
-**Where rivals are genuinely stronger, stated honestly:** some entries ship an
-open ERC-8004 registry read (so any registered agent appears without approval),
-an MCP server surface, or a longer produced demo film. GuardRail's edge is not
-breadth of surface — it is that its trust claims are **enforced by the registry
-contract and re-derivable from mainnet state**, and that it is live on the chain
-the brief names.
+**The one thing nobody else ships: a proof of containment you can verify
+without trusting us.** Every marketplace in this category *asserts* that
+out-of-scope calls are blocked. `/verify` emits a certificate committing to the
+agent's exact authority (allowlist, cap, period, session key) at a pinned block,
+cross-checked against the Altana KeyStore. Recompute it yourself with `cast` and
+you get the same hash — or you don't, and the certificate is a forgery. If the
+session is revoked or the scope widens, the verdict and the commitment both
+change. That is the difference between a security claim and a security proof.
+
+**Where rivals are still stronger:** some ship a longer produced demo film, and
+broader social/discovery polish. GuardRail's edge is not breadth of surface — it
+is that its trust claims are **enforced by the registry contract, re-derivable
+from mainnet state, and now portable**.
 
 ## Honest status
 
@@ -302,6 +314,10 @@ Re-verified live on **11 Sep 2026**. Full matrix in
 | x402 paid settlement in $U on mainnet | ✅ verified live end-to-end (receipt `status 0x1` + facilitator nonce advance) |
 | Tests: `forge test` / `vitest run` | ✅ 23/23 and 43/43 passing |
 | Contract source verified on BscScan | ✅ verified 2026-09-11 (solc v0.8.35, source published) |
+| ERC-8004 identity | ✅ registered on mainnet — ids **345084–345087**, ownership verified with `ownerOf` |
+| **Portable scope certificate** (`/verify`) | ✅ shipped — commitment reproduced independently with `cast` alone |
+| **Open ERC-8004 discovery** (`/registry`) | ✅ shipped — lists third-party agents, not only ours |
+| **MCP server** (`/api/mcp`) | ✅ shipped — 5 read-only tools |
 | ERC-8183 escrow hire | ✅ **live on mainnet** — job #56774 FUNDED, 0.1 $U genuinely held in escrow |
 | Hires / ratings recorded | ✅ 5 hires + 5 ratings per listing → every `trustScore` **100/100** (real onchain txs; self-recorded track record, not external demand) |
 | x402 merchant availability | ✅ live at `guardrail-ohky.onrender.com` |
