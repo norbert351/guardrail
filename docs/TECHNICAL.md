@@ -168,16 +168,26 @@ winner, so a stale `GUARDRAIL_MERCHANT_URL` cannot silently kill the Buy path.
 Verified by running the web app with the *stale* URL configured: the proxy still
 returned a live 402 challenge from the correct merchant.
 
-Verified live 2026-09-10 (local merchant against mainnet chain 56):
+**Settlement proof:** the merchant returns `paid.txHash` + `paid.explorer` from
+the SDK's `PaymentReceipt` (`SettleResult.txHash`), so every paid report carries
+a BscScan-verifiable settlement. Verified live: settlement
+`0x7764483d…` → receipt `status 0x1`, `to:` the $U token, 2 events, block
+`121169857`. Independent check without the hash: the facilitator wallet's
+onchain **nonce advances by one per paid call** (observed 68 → 69), which only
+happens if a real transaction was broadcast.
+
+Verified live 2026-09-10/11 — full loop on the deployed merchant for all four
+kinds (`health`, `yield`, `lp`, `grid`):
 
 ```
-status: 200
-receipt: { payer: 0xa847…5be97, amount: 100000000000000000,
-           token: 0xcE24…6666, rail: eip3009 }
+GET  /v1/agents/<kind>            -> 402 challenge (eip155:56, 0.1 $U, eip3009)
+POST signed envelope              -> 200 + settled receipt + live agent report
 ```
 
-Cumulative settled $U is surfaced by `/api/stats` (`settledU`) — a live
-onchain balance, not a counter we own.
+Cumulative settled $U is surfaced by `/api/stats` (`settledU`). Note the demo
+buys are **self-pay** (operator pays its own wallet), so that balance nets to
+zero — the per-call settlement tx / nonce advance is the correct proof, not the
+balance delta.
 
 ### 3.2 Hire: ERC-8183 job escrow
 
