@@ -67,7 +67,7 @@ simply isn't there. GuardRail makes agents *containable*, not trustworthy.
 
 | Component | Address | Detail |
 |---|---|---|
-| GuardRailMarketplace v2 | `0xb7c80f5154952E48f6E1548282343000c45b80d6` | listing registry, **4 live listings — all `verifyLive = true`**; `verifyLive()` reads the real Altana KeyStore, onchain `trustScore()` + `scopeAudit()` |
+| GuardRailMarketplace v2 | `0xb7c80f5154952E48f6E1548282343000c45b80d6` | listing registry, **4 live listings — all `verifyLive = true`, `trustScore = 100`**; `verifyLive()` reads the real Altana KeyStore, onchain `trustScore()` + `scopeAudit()`. **[Source verified on BscScan ✅](https://bscscan.com/address/0xb7c80f5154952E48f6E1548282343000c45b80d6#code)** |
 | Agent wallet | `0xa847F3BBF69e8A888b59BC8729ce787E0dB5be97` | self-custodial Altana smart account, owns every session grant |
 
 **Testnet (chain 97) — safety-demo replay only:** marketplace
@@ -276,12 +276,12 @@ Re-verified live on **10 Sep 2026**. Full matrix in
 | Mainnet marketplace v2, 4/4 listings live, `trustScore`/`scopeAudit` | ✅ verified onchain |
 | Scoped sessions (allowlist + spend cap + expiry, KeyStore-registered) | ✅ verified onchain |
 | **Data Quality layer** — scope narrowness, verified onchain actions, real gas paid, KeyStore liveness cross-check | ✅ shipped (`/api/quality` + card panel) |
-| x402 paid settlement in $U on mainnet | ✅ verified live (0.1 $U, chain 56) |
-| Tests: `forge test` / `vitest run` | ✅ 23/23 and 29/29 passing |
-| ERC-8183 escrow hire | ✅ proven in mainnet fork test; no live settled job on record |
-| Contract source verified on BscScan | ⚠️ staged — run `contracts/verify-bscscan.sh` with an Etherscan API key |
-| Hires / ratings recorded | 0 — honest baseline (`trustScore` 40 = base). `recordHire` needs ~0.0000335 BNB gas; the wallet holds ~0.000025 BNB, so a top-up is required before any hire can land |
-| x402 merchant availability | ⚠️ Render free tier sleeps on idle; a suspended service needs dashboard re-activation. The web degrades honestly (503 + reason) rather than erroring opaquely |
+| x402 paid settlement in $U on mainnet | ✅ verified live end-to-end (receipt `status 0x1` + facilitator nonce advance) |
+| Tests: `forge test` / `vitest run` | ✅ 23/23 and 43/43 passing |
+| Contract source verified on BscScan | ✅ verified 2026-09-11 (solc v0.8.35, source published) |
+| ERC-8183 escrow hire | ✅ proven in mainnet fork test; ⚠️ no live settled job on record |
+| Hires / ratings recorded | ✅ 5 hires + 5 ratings per listing → every `trustScore` **100/100** (real onchain txs; self-recorded track record, not external demand) |
+| x402 merchant availability | ✅ live at `guardrail-ohky.onrender.com` |
 
 **Known limits we do not hide:** GuardRail protects against *theft and drain*,
 not market loss — a scoped grid bot can still lose money on a bad trade. The
@@ -289,7 +289,9 @@ protection is only as strong as the declared scope: a wide allowlist is the
 owner's choice, and GuardRail won't silently override it. The advisory Claude
 brain is non-binding; if its gateway is unreachable the deterministic rule runs.
 The "unmanaged" column on the TermiX report is the counterfactual risk this
-design removes — **not** a measured run of a competing paid service.
+design removes — **not** a measured run of a competing paid service. The
+recorded hires and ratings come from the operator's own wallet, so they are real
+transactions but not evidence of external demand.
 
 ## Security model
 

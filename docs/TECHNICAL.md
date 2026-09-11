@@ -376,10 +376,11 @@ web proxy now degrades honestly in that case (HTTP 503 + a readable reason on
 | `/proof` recompute page | ✅ shipped, reads live chain state |
 | x402 paid settlement in $U | ✅ verified live (0.1 $U, chain 56) |
 | ERC-8183 escrow hire | ✅ proven in mainnet fork test; ⚠️ no live settled job on record |
-| Contract source verified on BscScan | ⚠️ **staged, not done** — run `contracts/verify-bscscan.sh` with an `ETHERSCAN_API_KEY` (the only blocker) |
-| Merchant availability during judging | ⚠️ was **suspended** at audit time; needs dashboard re-activation. Web now degrades honestly (503 + reason) |
+| Contract source verified on BscScan | ✅ **VERIFIED** 2026-09-11 — `GuardRailMarketplace`, solc v0.8.35, source published at [bscscan.com/address/0xb7c80f…80d6#code](https://bscscan.com/address/0xb7c80f5154952E48f6E1548282343000c45b80d6#code) |
+| Merchant availability during judging | ✅ live — `guardrail-ohky.onrender.com` (host was rotated after the old service was suspended; web resolves it via fallback chain) |
 | Hires / ratings recorded | ✅ **5 hires + 5 ratings per listing** (20 real txs) — `trustScore` 40 → **100** on all four |
-| Test suite | 23/23 forge · 31/31 vitest · demo `tsc` clean |
+| x402 paid settlement | ✅ verified end-to-end on the deployed merchant for all four kinds; settlement receipt `status 0x1` + facilitator nonce advance |
+| Test suite | 23/23 forge · 43/43 vitest · demo `tsc` clean |
 
 **Funding:** the operator wallet was topped up to `0.005 BNB`; all 40 `recordHire`/`rate` txs plus the agent executes cost ~`0.00009 BNB` total at the live `0.05 gwei` gas price.
 
