@@ -103,6 +103,18 @@ const server = createServer(async (req, res) => {
   }
 
   const receipt = guardResult.receipt!;
+  // Surface the REAL settlement tx hash. The SDK's receipt carries it
+  // (SettleResult.txHash), and including it makes every paid report
+  // independently verifiable on BscScan — the buyer doesn't have to trust us.
+  const settleTx = (receipt as { txHash?: string }).txHash;
+  const paid = {
+    payer: receipt.payer,
+    amount: receipt.amount.toString(),
+    token: receipt.token,
+    rail: receipt.rail,
+    chainId: 56,
+    ...(settleTx ? { txHash: settleTx, explorer: `https://bscscan.com/tx/${settleTx}` } : {}),
+  };
 
   // The payment has ALREADY settled onchain at this point. If report generation
   // fails (e.g. the host's GUARDRAIL_AGENT_KEYS is missing or malformed), the
@@ -120,13 +132,7 @@ const server = createServer(async (req, res) => {
       JSON.stringify(
         {
           agent: kind,
-          paid: {
-            payer: receipt.payer,
-            amount: receipt.amount.toString(),
-            token: receipt.token,
-            rail: receipt.rail,
-            chainId: 56,
-          },
+          paid,
           report: null,
           reportError:
             "Payment settled onchain, but this merchant instance could not generate the report. " +
@@ -144,13 +150,7 @@ const server = createServer(async (req, res) => {
   const body = {
     agent: kind,
     listing: `GuardRail ${kind} agent`,
-    paid: {
-      payer: receipt.payer,
-      amount: receipt.amount.toString(),
-      token: receipt.token,
-      rail: receipt.rail,
-      chainId: 56,
-    },
+    paid,
     report,
   };
   res.writeHead(200, { "content-type": "application/json" });

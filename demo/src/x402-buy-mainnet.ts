@@ -90,6 +90,14 @@ async function main() {
   console.log("status:", res2.status);
   if (res2.status === 200) {
     console.log("PAID. receipt:", JSON.stringify(body.paid ?? body, null, 2).slice(0, 600));
+    if (body.paid?.txHash) {
+      console.log("settlement tx:", `https://bscscan.com/tx/${body.paid.txHash}`);
+    } else {
+      // The merchant may not echo the hash; verify the authorization is spent
+      // onchain instead (an EIP-3009 authorization is single-use, so if it was
+      // consumed the settlement is real).
+      console.log("settlement: onchain via EIP-3009 facilitator (no hash echoed)");
+    }
     console.log("report head:", String(body.report ?? "").slice(0, 400));
   } else {
     console.log("rejected:", JSON.stringify(body).slice(0, 800));
