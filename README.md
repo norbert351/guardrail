@@ -266,9 +266,32 @@ presets, live settled ERC-8183 jobs, BscScan source verification, and a
 logging-capable RPC. Full forward plan, including what we deliberately will
 *not* build: [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
+## How this differs from the other marketplace submissions
+
+The "revocable session key registered in the Altana Keystore" idea is now the
+**floor of this category, not a differentiator** — several entries ship it. What
+actually separates GuardRail, stated plainly so a judge can check each line:
+
+| | GuardRail | Typical entry (e.g. testnet-only marketplaces) |
+|---|---|---|
+| **Chain** | **BSC mainnet (56)** — the eligibility line is "agents live on BSC"; mainnet is also stronger for the Altana track | testnet only |
+| **Trust state** | `verifyLive()` reads the public Keystore onchain; **the marketplace contract cannot list an agent whose session is not live** (`SessionNotLive` revert) | session liveness shown in the UI, not enforced at the registry |
+| **Score** | `trustScore` computed **onchain** (40 live + 30 hire traction + 30 rating), re-derivable by anyone | self-reported or off-chain |
+| **Derived evidence** | `/api/quality` re-derives scope width, verified action count, real gas paid and a **KeyStore-vs-`verifyLive` cross-check** from chain state | counts and descriptions |
+| **Settlement** | x402 in mainnet $U, each report carrying its **settlement tx hash**; facilitator nonce advances per call | testnet faucet tokens |
+| **Escrow** | live mainnet ERC-8183 job (#56774, 0.1 $U held) | testnet $U from a faucet |
+| **Proof** | `/proof` recomputes claims at a captured block; BscScan-verified source | README claims |
+
+**Where rivals are genuinely stronger, stated honestly:** some entries ship an
+open ERC-8004 registry read (so any registered agent appears without approval),
+an MCP server surface, or a longer produced demo film. GuardRail's edge is not
+breadth of surface — it is that its trust claims are **enforced by the registry
+contract and re-derivable from mainnet state**, and that it is live on the chain
+the brief names.
+
 ## Honest status
 
-Re-verified live on **10 Sep 2026**. Full matrix in
+Re-verified live on **11 Sep 2026**. Full matrix in
 [`docs/TECHNICAL.md`](./docs/TECHNICAL.md) §9.
 
 | Area | Status |

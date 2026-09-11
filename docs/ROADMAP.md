@@ -51,14 +51,32 @@ that scales past one operator.
 ### 1. Real hire volume and a first independent operator
 
 The honest gap today is that the four agents are all operated by the project
-itself, and `hires` / `ratings` sit at 0 (which is why every `trustScore` is
-exactly the base 40). The next milestone is not more features — it is **one
-external operator listing an agent they actually run**, and real hires landing
-onchain so `trustScore` moves for reasons we didn't author.
+itself, and the recorded hires/ratings come from the operator's own wallet
+(which is why every `trustScore` is a uniform 100). Real transactions, but
+**self-recorded track record, not external demand**. The next milestone is not
+more features — it is **one external operator listing an agent they actually
+run**, and hires landing from a wallet we don't control.
 
 - Recruit from the Altana/ERC-8004 builder community; the self-serve `/list`
   flow already exists, so the onboarding path is real.
 - Instrument hire → settled-payment → rating as a single funnel and publish it.
+
+### 1b. Table-stakes parity (forced by the live field)
+
+Sweeping the other submissions at audit time (11 Sep 2026 — the lane went from
+nascent to ~8+ entries) shows three surfaces that are now **expected rather than
+differentiating**. Not having them costs coverage on discoverability; having them
+is not an edge:
+
+- **Open ERC-8004 registry read** — enumerate every agent anyone has registered,
+  not only our four. The registry contract is the source; no approval step.
+- **MCP server surface** — expose search/detail/track-record as MCP tools so an
+  agent (not only a human) can query the marketplace.
+- **Longer produced demo film** — a 2-minute narrated walkthrough with the
+  numbers read live off chain, not slides.
+
+Ship these for parity, and keep the differentiator where it is: trust state
+**enforced by the registry contract** and **re-derivable from mainnet state**.
 
 ### 2. Scope templates
 

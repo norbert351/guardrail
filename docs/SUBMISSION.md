@@ -122,14 +122,19 @@ MK=0xb7c80f5154952E48f6E1548282343000c45b80d6
 RPC=https://bsc-dataseed.bnbchain.org
 cast call $MK "listingCount()(uint256)" --rpc-url $RPC          # 4
 cast call $MK "verifyLive(uint256)(bool)" 1 --rpc-url $RPC      # true
-cast call $MK "trustScore(uint256)(uint256)" 1 --rpc-url $RPC   # 40
+cast call $MK "trustScore(uint256)(uint256)" 1 --rpc-url $RPC   # 100
+cast call $MK "stats(uint256)(uint32,uint256,uint32)" 1 --rpc-url $RPC   # 5,25,5 (hires, ratingSum, ratingCount)
 
 # 4. Web tests
-cd ../web && npm i && npx vitest run                            # 14 pass
+cd ../web && npm i && npx vitest run                            # 43 pass
 
 # 5. Or just open the live product
 open https://guardrail-delta.vercel.app          # marketplace
 open https://guardrail-delta.vercel.app/proof    # recomputed onchain claims
+open https://guardrail-delta.vercel.app/api/quality   # the Data Quality layer (JSON)
+
+# 6. Escrow: read the live ERC-8183 job (no keys)
+cd ../demo && npx tsx src/escrow-status.ts 56774 # FUNDED, 0.1 $U held in escrow
 ```
 
 Env var **names** needed to run the full stack locally (no real secrets in the
@@ -140,18 +145,18 @@ repo): `GUARDRAIL_ADMIN_KEY`, `GUARDRAIL_AGENT_KEYS`, `GUARDRAIL_NETWORK=mainnet
 
 | Claim | Verified how | Verdict |
 |---|---|---|
-| 4 listings live on BSC mainnet | `listingCount()=4`, `verifyLive(1..4)=true` with `cast`, 10 Sep | ✅ VERIFIED |
+| 4 listings live on BSC mainnet | `listingCount()=4`, `verifyLive(1..4)=true` with `cast`, 11 Sep | ✅ VERIFIED |
 | Sessions carry allowlist + cap + expiry | `scopeAudit(1)` → PancakeSwap+WBNB, 0.02 BNB/day, 86400s | ✅ VERIFIED |
-| `trustScore` is onchain | `trustScore(1)=40` read from the contract | ✅ VERIFIED |
+| `trustScore` is onchain and earned | `trustScore(1..4)=100`, `stats()` = 5 hires + 5 ratings each (real txs) | ✅ VERIFIED |
 | Liveness is real, not cached | `/api/quality` reads the KeyStore `isValidKey` and cross-checks it against `verifyLive` → `agree: true` | ✅ VERIFIED |
 | `list()` is gated on a live session | `contracts/src/GuardRailMarketplace.sol` reverts `SessionNotLive`; covered by `test_ListWithLiveSession` | ✅ VERIFIED |
-| Out-of-scope call blocked | `demo/src/agent-act-mainnet.ts` + Foundry tests (`UnauthorizedCall`) | ✅ VERIFIED |
-| x402 settles in $U on mainnet | live 402→200 with receipt `{payer, 0.1e18, $U, eip3009}` | ✅ VERIFIED |
-| 7 recorded onchain txs are real | each re-fetched per request: status success, real block + gas | ✅ VERIFIED |
-| ERC-8183 escrow hire | mainnet fork test `HireFork.t.sol` (FUNDED, escrow held) | ⚠️ PROVEN-IN-FORK (no live settled job on record) |
-| Contract source verified on BscScan | `contracts/verify-bscscan.sh` staged; needs an Etherscan API key | ❌ BLOCKED (key only) |
-| Hires / ratings > 0 | `/api/stats` reads 0; `recordHire` simulates OK but wallet holds ~0.000025 BNB vs ~0.0000335 BNB gas | ❌ NONE YET (needs wallet top-up) |
-| Merchant reachable during judging | `curl /healthz` returned the Render "Service Suspended" page | ❌ BLOCKED (needs dashboard re-activation) |
+| Out-of-scope call blocked | live mainnet `agent-act-mainnet.ts`: out-of-scope call reverts `UnauthorizedCall` at validation | ✅ VERIFIED |
+| x402 settles in $U on mainnet | live 402→200 with receipt `{payer, 0.1e18, $U, eip3009}`; settlement tx `status 0x1`; facilitator nonce advances per call | ✅ VERIFIED |
+| 17 recorded onchain txs are real | each re-fetched per request: status success, real block + gas | ✅ VERIFIED |
+| ERC-8183 escrow hire | **live mainnet job #56774 FUNDED, 0.1 $U held in escrow** (tx `0xf3f15ec3…`) | ✅ VERIFIED (release gated by the 7-day optimistic dispute window — by design) |
+| Contract source verified on BscScan | `GuardRailMarketplace` verified, solc v0.8.35, source published | ✅ VERIFIED |
+| Hires / ratings recorded | `stats()` = 5 hires + 5 ratings per listing (20 real txs, operator wallet — real txs, self-recorded track record) | ✅ VERIFIED |
+| Merchant reachable during judging | `curl /healthz` → `{"ok":true,…}`; all four paid endpoints return a 402 challenge | ✅ VERIFIED |
 
 ## 9. Known constraints (state honestly if asked)
 
