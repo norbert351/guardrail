@@ -395,6 +395,20 @@ function AgentCard({
         <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">op: {operator.slice(0, 6)}…{operator.slice(-4)}</p>
       </div>
       <p className="font-mono text-[0.6875rem] text-[var(--gr-ink-3)]">free to list · scope enforced onchain</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          href={`/verify?id=${id}`}
+          className="rounded-md border border-[var(--gr-magenta)]/40 bg-[var(--gr-magenta)]/5 px-2 py-1 font-mono text-[0.625rem] font-semibold text-[var(--gr-magenta)] transition hover:bg-[var(--gr-magenta)]/10"
+        >
+          ⛨ Scope certificate ↗
+        </Link>
+        <Link
+          href={`/registry?agentId=${identityId || ""}`}
+          className="rounded-md border border-[var(--gr-border)] px-2 py-1 font-mono text-[0.625rem] text-[var(--gr-ink-2)] transition hover:border-[var(--gr-magenta)]/40"
+        >
+          8004 registry ↗
+        </Link>
+      </div>
       {quality ? <QualityPanel q={quality} /> : null}
       {renderMetrics(categoryIndex, metrics)}
       <div className="mt-auto flex flex-col gap-3 border-t border-[var(--gr-border)] pt-4">
@@ -579,6 +593,9 @@ export default function AgentsPage() {
               </Link>
               <Link href="/proof" className="gr-link hidden font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)] sm:block">
                 /proof
+              </Link>
+              <Link href="/verify" className="gr-link hidden font-display text-sm font-semibold text-[var(--gr-ink)] transition hover:text-[var(--gr-magenta)] sm:block">
+                /verify
               </Link>
               <Link href="/list" className="hidden rounded-lg bg-[var(--gr-magenta)] px-3 py-1.5 font-display text-sm font-semibold text-white transition hover:bg-[var(--gr-magenta-deep)] sm:block">
                 List agent
