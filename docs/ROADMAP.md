@@ -78,14 +78,20 @@ three are now live:
   discovering third-party agents alongside ours.
 - ✅ **MCP server surface** — `/api/mcp` with 5 read-only tools, so an agent
   (not only a human) can query the marketplace. No tool can spend funds.
-- ✅ **Produced demo film** — a real live screencast of the deployed product
-  (53s, 720p, in-repo at `docs/demo/guardrail_demo_720p.mp4`), covering home →
-  `/agents` grid → safety proof, with the real deployment URL and real onchain
-  tx hashes visible on screen. Verified frame-by-frame as genuine product
-  footage, not slides or generated graphics.
-- ⏳ **Narration + length** — the remaining gap is production polish, not
-  substance: the film is silent (no voiceover) and under 2 minutes. A narrated
-  ~2-minute cut reading the numbers live off chain is still open.
+- ✅ **Produced demo film** — a **narrated** live screencast of the deployed
+  product (53s, 720p, in-repo at `docs/demo/guardrail_demo_720p.mp4`), covering
+  home → `/agents` grid → safety proof → `/termix`. The voiceover (18 segments,
+  full 53s) walks the safety proof out loud — *"watch an agent get blocked" →
+  out-of-scope reverts `UnauthorizedCall` → over-cap rejects → only an allowed
+  call executes* — and the real deployment URL and onchain tx hashes are visible
+  on screen. Verified frame-by-frame as genuine product footage, not slides or
+  generated graphics.
+- ⏳ **Length extension** — the remaining gap is duration, not substance: 53s
+  against a ~2-minute target. Extending it means adding narration over `/verify`
+  (portable certificate), `/registry` (open ERC-8004 discovery), `/api/mcp`
+  (agent-queryable) and `/proof` (live recompute). Those sections need a fresh
+  live screen-record pass plus new narration, so it is deferred rather than
+  faked — the same honesty rule that keeps this film real.
 - ✅ **Real ERC-8004 identities** — registered on mainnet (345084–345087),
   replacing a set of ids that actually belonged to four other teams.
 

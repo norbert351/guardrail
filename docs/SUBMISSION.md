@@ -22,7 +22,7 @@ BscScan verification and the demo film checked against the sources themselves).
 | One-line pitch | Agents that can only act inside the limits you set. |
 | Repo | `https://github.com/norbert351/guardrail` (public) |
 | Live URL (main) | `https://guardrail-delta.vercel.app` |
-| Demo video | `docs/demo/guardrail_demo_720p.mp4` in-repo (53s, 720p) — also publishable to YouTube/X |
+| Demo video | `docs/demo/guardrail_demo_720p.mp4` in-repo (53s, 720p, **narrated** — the voiceover walks the safety proof as it happens) — also publishable to YouTube/X |
 | Prototype stage | Working MVP |
 | BSC / EVM | Advanced |
 | Sub-prize tracks | PancakeSwap + TermiX |

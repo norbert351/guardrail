@@ -210,9 +210,10 @@ web/         Next.js marketplace (port 3050): dynamic listings,
   the four required categories, all `verifyLive = true` on BSC mainnet.
 - **[`/proof`](https://guardrail-delta.vercel.app/proof)** — the strongest
   artifact: it re-derives each claim from chain state rather than restating it.
-- **Demo video:** [`docs/demo/guardrail_demo_720p.mp4`](./docs/demo) — a live
-  screencast of the deployed product (home → `/agents` grid → safety proof →
-  `/termix`).
+- **Demo video:** [`docs/demo/guardrail_demo_720p.mp4`](./docs/demo) — a narrated
+  live screencast of the deployed product, 53s at 720p (home → `/agents` grid →
+  safety proof → `/termix`). The voiceover walks the safety proof out loud as it
+  happens on screen.
 - **Independent verification** — every claim is checkable with `cast` against
   the live contract (commands in `docs/TECHNICAL.md` §2.3).
 
