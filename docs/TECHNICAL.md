@@ -406,7 +406,7 @@ web proxy now degrades honestly in that case (HTTP 503 + a readable reason on
   the deterministic rule + scoped session decide and execute. The LLM can never
   widen the scope.
 
-## 9. Honest status (2026-09-10)
+## 9. Honest status (2026-09-11)
 
 | Item | Status |
 |---|---|
@@ -421,7 +421,7 @@ web proxy now degrades honestly in that case (HTTP 503 + a readable reason on
 | Merchant availability during judging | ✅ live — `guardrail-ohky.onrender.com` (host was rotated after the old service was suspended; web resolves it via fallback chain) |
 | Hires / ratings recorded | ✅ **5 hires + 5 ratings per listing** (20 real txs) — `trustScore` 40 → **100** on all four |
 | x402 paid settlement | ✅ verified end-to-end on the deployed merchant for all four kinds; settlement receipt `status 0x1` + facilitator nonce advance |
-| Test suite | 23/23 forge · 43/43 vitest · demo `tsc` clean |
+| Test suite | 23/23 forge · 51/51 vitest · demo `tsc` clean |
 
 **Funding:** the operator wallet was topped up to `0.005 BNB`; all 40 `recordHire`/`rate` txs plus the agent executes cost ~`0.00009 BNB` total at the live `0.05 gwei` gas price.
 

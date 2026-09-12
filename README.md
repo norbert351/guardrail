@@ -312,7 +312,7 @@ Re-verified live on **11 Sep 2026**. Full matrix in
 | Scoped sessions (allowlist + spend cap + expiry, KeyStore-registered) | ✅ verified onchain |
 | **Data Quality layer** — scope narrowness, verified onchain actions, real gas paid, KeyStore liveness cross-check | ✅ shipped (`/api/quality` + card panel) |
 | x402 paid settlement in $U on mainnet | ✅ verified live end-to-end (receipt `status 0x1` + facilitator nonce advance) |
-| Tests: `forge test` / `vitest run` | ✅ 23/23 and 43/43 passing |
+| Tests: `forge test` / `vitest run` | ✅ 23/23 and 51/51 passing |
 | Contract source verified on BscScan | ✅ verified 2026-09-11 (solc v0.8.35, source published) |
 | ERC-8004 identity | ✅ registered on mainnet — ids **345084–345087**, ownership verified with `ownerOf` |
 | **Portable scope certificate** (`/verify`) | ✅ shipped — commitment reproduced independently with `cast` alone |

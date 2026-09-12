@@ -3,7 +3,8 @@
 Paste-ready answers for the BNB Chain **"The Smart Money Era: Build the Era"**
 submission form, plus the verification matrix and live probes a judge can run.
 Locked during the pre-submission audit on **2 Sep 2026**; state re-verified
-**10 Sep 2026**.
+**11 Sep 2026** (all live surfaces + the paid x402 rail re-probed green; escrow,
+BscScan verification and the demo film checked against the sources themselves).
 
 - **Event:** The Smart Money Era: Build the Era — BNB Chain
 - **Window:** 5 Aug – 9 Sep 2026 (UTC+0) — **closed; now in judging**
@@ -100,7 +101,7 @@ Both can only ever touch the allowlisted PancakeSwap contracts, capped at
 | Sessions registered in the Keystore, readable onchain | ✅ public registry `0x6572427E…7E0a` |
 | Real onchain transactions through a session key | ✅ `agent-act-mainnet.ts` (within-scope success; out-of-scope `UnauthorizedCall`) |
 | User-facing control: see scope + revoke in-product | ✅ cards surface scope; `/agents` safety-proof; operator-only Pause/Unpause/Unlist |
-| Bonus: hire via ERC-8183 | ✅ buyer side, proven in `HireFork.t.sol` |
+| Bonus: hire via ERC-8183 | ✅ buyer side, `HireFork.t.sol` **and live mainnet job #56774 FUNDED with 0.1 $U in escrow** |
 | Bonus: sell over x402/B402 | ✅ `@altananetwork/x402-server`, 0.1 $U per report |
 
 Wallet addresses to include in the submission:
@@ -126,7 +127,7 @@ cast call $MK "trustScore(uint256)(uint256)" 1 --rpc-url $RPC   # 100
 cast call $MK "stats(uint256)(uint32,uint256,uint32)" 1 --rpc-url $RPC   # 5,25,5 (hires, ratingSum, ratingCount)
 
 # 4. Web tests
-cd ../web && npm i && npx vitest run                            # 43 pass
+cd ../web && npm i && npx vitest run                            # 51 pass
 
 # 5. Or just open the live product
 open https://guardrail-delta.vercel.app          # marketplace

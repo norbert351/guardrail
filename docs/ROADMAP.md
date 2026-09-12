@@ -38,7 +38,13 @@ that scales past one operator.
 - **x402 / B402 sell rail** — four paid endpoints at 0.1 $U per report,
   EIP-3009 settlement on mainnet.
 - **ERC-8183 hire rail (buyer side)** — five-call atomic job creation + escrow,
-  proven in a mainnet fork test.
+  proven in a mainnet fork test, and now **live on mainnet**: job #56774 is
+  `FUNDED` with 0.1 $U genuinely held in escrow (expires 2026-09-18).
+  Settlement is blocked by protocol design until the provider submits a
+  deliverable and the 7-day optimistic dispute window elapses — an early
+  `settle()` reverts `NotDecided()` (0x17be5b7b). That is correct protocol
+  behaviour, not a failure, and it is why there is a funded job rather than a
+  released one on record.
 - **ERC-8004 identity** — one identity per agent (1790–1793), linked to
   8004scan from every card.
 - **Agent Advantage Report** (`/termix`) — real onchain evidence (settled $U,
@@ -72,8 +78,14 @@ three are now live:
   discovering third-party agents alongside ours.
 - ✅ **MCP server surface** — `/api/mcp` with 5 read-only tools, so an agent
   (not only a human) can query the marketplace. No tool can spend funds.
-- ⏳ **Longer produced demo film** — still the 53s live screencast. A 2-minute
-  narrated walkthrough with numbers read live off chain remains open.
+- ✅ **Produced demo film** — a real live screencast of the deployed product
+  (53s, 720p, in-repo at `docs/demo/guardrail_demo_720p.mp4`), covering home →
+  `/agents` grid → safety proof, with the real deployment URL and real onchain
+  tx hashes visible on screen. Verified frame-by-frame as genuine product
+  footage, not slides or generated graphics.
+- ⏳ **Narration + length** — the remaining gap is production polish, not
+  substance: the film is silent (no voiceover) and under 2 minutes. A narrated
+  ~2-minute cut reading the numbers live off chain is still open.
 - ✅ **Real ERC-8004 identities** — registered on mainnet (345084–345087),
   replacing a set of ids that actually belonged to four other teams.
 
@@ -89,17 +101,28 @@ narrow (agent useless). Ship a small library of **audited scope presets** per
 agent type — e.g. "PancakeSwap LP manager: router + WBNB, 0.02 BNB/day,
 7-day expiry" — so the safe choice is also the easy one.
 
-### 3. Live settled ERC-8183 jobs
+### 3. Live settled ERC-8183 jobs — FUNDED JOB SHIPPED (11 Sep 2026)
 
-The escrow flow is proven in a fork but there is no live settled job on record.
-Close that: run real hires end-to-end on mainnet with visible escrow → release,
-and surface each job's lifecycle in the UI.
+Job #56774 is live and funded on mainnet: 0.1 $U genuinely held in escrow,
+client/provider both `0xa847…be97`, expires 2026-09-18, readable any time via
+`tsx demo/src/escrow-status.ts 56774`.
 
-### 4. Contract source verification on BscScan
+What remains open is **settlement, not escrow**. `settle()` reverts
+`NotDecided()` (0x17be5b7b) until the provider submits a deliverable and the
+7-day optimistic dispute window elapses. So the honest remaining work is to
+run a job through to `RELEASED` with a real third-party provider and surface
+each job's full lifecycle in the UI — the funding half is done.
 
-Today every claim is verifiable by reading chain state, but the contract source
-is not yet verified on the explorer. Publish the source and the build settings
-so a reviewer can diff bytecode against the repo.
+### 4. Contract source verification on BscScan — SHIPPED (11 Sep 2026)
+
+`GuardRailMarketplace` (`0xb7c80f…80d6`) is verified on BscScan via Etherscan V2
+(chain 56): solc v0.8.35, source published, and independently confirmed through
+the `getSourceCode` API. The verified source is linked from the contract table
+in the README.
+
+What remains is broader than this one contract: keep source + build settings
+published for **every** deployed contract as the surface grows, so a reviewer
+can always diff bytecode against the repo without asking us.
 
 ### 5. Volume-tolerant infrastructure
 
